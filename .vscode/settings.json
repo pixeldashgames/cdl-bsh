@@ -4,6 +4,7 @@
         "unistd.h": "c",
         "stdbool.h": "c",
         "stdio.h": "c",
-        "text_utils.h": "c"
+        "text_utils.h": "c",
+        "windows.h": "c"
     }
 }
