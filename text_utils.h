@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <stdbool.h>
 
 #define ANSI_BOLD "\\e[1m"
 #define ANSI_BOLD_RESET "\\e[0m"
@@ -30,4 +31,10 @@
 #define COLOR_TOKENS {BOLD, BOLD_RESET, RED, GREEN, YELLOW, BLUE, CYAN, COLOR_RESET}
 #define TOKENS_COUNT 8
 
-WORD toWindowsAttribute(char *token, WORD savedAttributes, WORD currentAttributes);
+struct WindowsAttribute
+{
+    PWORD attribute;
+    bool valid;
+};
+
+struct WindowsAttribute toWindowsAttribute(char *token, WORD savedAttributes, WORD currentAttributes);
