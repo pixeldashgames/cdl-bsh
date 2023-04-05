@@ -10,7 +10,7 @@
 #include <windows.h>
 #endif
 
-#define MAX_COMMAND_LENGTH 1024
+#define MAX_COMMAND_LENGTH 8192
 
 struct JaggedCharArray
 {
@@ -28,7 +28,7 @@ void print_windows_token(char *token, HANDLE consoleHandle, WORD savedAttributes
 int main()
 {
     // To store the last command entered by the user.
-    char cmd[MAX_COMMAND_LENGTH];
+    char *cmd = malloc(MAX_COMMAND_LENGTH * sizeof(char));
 
     char currentDir[PATH_MAX];
     if (getcwd(currentDir, sizeof(currentDir)) == NULL)
@@ -40,13 +40,16 @@ int main()
 
     while (true)
     {
-        char toPrint[MAX_COMMAND_LENGTH];
-        sprintf(toPrint, YELLOW "cdl-bsh" COLOR_RESET " - " CYAN "%s" YELLOW BOLD " $ " BOLD_RESET COLOR_RESET, currentDir);
+        char consoleHeader[MAX_COMMAND_LENGTH];
+        sprintf(consoleHeader, YELLOW "cdl-bsh" COLOR_RESET " - " CYAN "%s" YELLOW BOLD " $ " BOLD_RESET COLOR_RESET, currentDir);
 
-        print(toPrint);
-        gets(cmd);
+        print(consoleHeader);
+        
+        fgets(cmd, MAX_COMMAND_LENGTH, stdin);
         
     }
+
+    free(cmd);
 
     return 0;
 }
