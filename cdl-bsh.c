@@ -62,11 +62,3 @@ void *change_dir(void *arg)
     *var = *target;
     return 0;
 }
-
-bool is_valid_directory(char *dir)
-{
-    DIR *pDir;
-
-    pDir = opendir(dir);
-    return pDir != NULL;
-}

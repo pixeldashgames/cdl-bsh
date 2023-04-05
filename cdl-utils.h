@@ -7,4 +7,4 @@ struct JaggedCharArray
 };
 
 bool is_valid_directory(char *dir);
-char **splitstr(char *str);
+struct JaggedCharArray splitstr(char *str, char sep);
