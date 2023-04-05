@@ -1,3 +1,4 @@
+#ifdef _WIN32
 #include <windows.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -54,3 +55,4 @@ struct WindowsAttribute toWindowsAttribute(char *token, WORD savedAttributes, WO
     struct WindowsAttribute ret = {result, valid};
     return ret;
 }
+#endif
