@@ -44,14 +44,16 @@ int main()
         sprintf(toPrint, YELLOW "cdl-bsh" COLOR_RESET " - " CYAN "%s" YELLOW BOLD " $ " BOLD_RESET COLOR_RESET, currentDir);
 
         print(toPrint);
-        scanf("%s[^\\n]", &cmd);
+        gets(cmd);
         
-        return 0;
     }
 
     return 0;
 }
 
+
+
+#pragma region Print
 void print(char *str)
 {
 #ifdef _WIN32
@@ -203,4 +205,4 @@ struct JaggedCharArray extract_color_tokens(char *str)
     return result;
 }
 #endif
-
+#pragma endregion
