@@ -6,18 +6,114 @@
 #include <unistd.h>
 #include <limits.h>
 #include "cdl-utils.h"
-
 #define MAX_COMMAND_LENGTH 8192
 
+// the parse has the foolowing structure =>  op(destination,source)
+int IsCommand(char *s);
+char *ParsePipes(char *func, int len);
+char *ParseFlow(char *func, int len);
 int main()
 {
-    char *cmd = malloc(MAX_COMMAND_LENGTH * sizeof(char));
-    char *parsed_cmd = malloc(MAX_COMMAND_LENGTH * sizeof(char));
-    int len = 0;
-    for (size_t i = 0; i < strlen(cmd); i++)
+    char commands[MAX_COMMAND_LENGTH] = "command1 < file1 | command2 | command3";
+    char *func = commands;
+    func = ParsePipes(func, strlen(func));
+    printf("%s", func);
+}
+char *ParsePipes(char *func, int len)
+{
+    char *temp = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+    temp = func;
+    for (int i = (len - 1); i >= 0; i--)
     {
-        if (cmd[i] == '|')
+        if (func[i] == '|')
         {
+            int left_size = i - 1;
+            int right_size = len - i - 2;
+            char right[MAX_COMMAND_LENGTH];
+            char left[MAX_COMMAND_LENGTH];
+            char *r = right;
+            char *l = left;
+            strncpy(right, func + i + 2, right_size);
+            strncpy(left, func + 0, left_size);
+            r = ParseFlow(right, right_size);
+            l = ParsePipes(left, left_size);
+            if (strcmp(left, l))
+            {
+                l = ParseFlow(left, left_size);
+            }
+            strcat(temp, "|");
+            strcat(temp, "(");
+            strcat(temp, r);
+            strcat(temp, ",");
+            strcat(temp, l);
+            strcat(temp, ")");
+            break;
         }
     }
+    for (size_t i = 0; i < len; i++)
+    {
+        if (func[i] != temp[i])
+            break;
+        else
+        {
+            if (i == len - 1)
+                func = ParseFlow(func, len);
+        }
+    }
+    return func;
+}
+char *ParseFlow(char *func, int len)
+{
+    for (int j = (len - 1); j >= 0; j--)
+    {
+        if ((func[j] == '<') || (func[j] == '>'))
+        {
+            int left_size = j - 1;
+            int right_size = len - j - 2;
+            char right[MAX_COMMAND_LENGTH];
+            char left[MAX_COMMAND_LENGTH];
+            char *r = right;
+            char *l = left;
+            strncpy(right, func + j + 2, right_size);
+            int _double = false;
+            // this happend when >> is founded
+            if (func[j - 1] == '>')
+            {
+                _double = true;
+                left_size -= 1;
+                strncpy(left, func + 0, left_size);
+            }
+            else
+            {
+                strncpy(left, func + 0, left_size);
+            }
+            l = ParseFlow(left, left_size);
+            char temp[MAX_COMMAND_LENGTH];
+            if (_double)
+            {
+                strcat(temp, ">");
+            }
+            if (func[j] == ">")
+            {
+                strcat(temp, ">");
+                strcat(temp, "(");
+                strcat(temp, l);
+                strcat(temp, ",");
+                strcat(temp, r);
+                strcat(temp, ")");
+            }
+            else
+            {
+                strcat(temp, "<");
+                strcat(temp, "(");
+                strcat(temp, r);
+                strcat(temp, ",");
+                strcat(temp, l);
+                strcat(temp, ")");
+            }
+            func = temp;
+            break;
+        }
+    }
+    return func;
 }

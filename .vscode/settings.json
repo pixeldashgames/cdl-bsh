@@ -6,6 +6,7 @@
         "stdio.h": "c",
         "text_utils.h": "c",
         "windows.h": "c",
-        "limits.h": "c"
+        "limits.h": "c",
+        "cdl-utils.h": "c"
     }
 }
