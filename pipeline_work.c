@@ -1,23 +1,15 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdbool.h>
-#include <stdarg.h>
 #include <string.h>
-#include <unistd.h>
-#include <limits.h>
 #include "cdl-utils.h"
-#define MAX_COMMAND_LENGTH 8192
 
 // the parse has the foolowing structure =>  op(destination,source)
-int IsCommand(char *s);
 char *ParsePipes(char *func, int len);
 char *ParseFlow(char *func, int len);
-int main()
+char *ParseCommand(char *func, int len);
+// This is the main method
+char *ParseCommand(char *func, int len)
 {
-    char commands[MAX_COMMAND_LENGTH] = "command1 >> file1 | command2 | command3";
-    char *func = commands;
-    func = ParsePipes(func, strlen(func));
-    printf("%s", func);
+    return ParsePipes(func, len);
 }
 char *ParsePipes(char *func, int len)
 {

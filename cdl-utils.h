@@ -1,5 +1,5 @@
 #include <stdbool.h>
-
+#define MAX_COMMAND_LENGTH 8192
 struct JaggedCharArray
 {
     char **arr;
