@@ -14,19 +14,21 @@ char *ParsePipes(char *func, int len);
 char *ParseFlow(char *func, int len);
 int main()
 {
-    char commands[MAX_COMMAND_LENGTH] = "command1 < file1 | command2 | command3";
+    char commands[MAX_COMMAND_LENGTH] = "command1 >> file1 | command2 | command3";
     char *func = commands;
     func = ParsePipes(func, strlen(func));
     printf("%s", func);
 }
 char *ParsePipes(char *func, int len)
 {
-    char *temp = malloc(MAX_COMMAND_LENGTH * sizeof(char));
-    temp = func;
+    char temp[MAX_COMMAND_LENGTH];
+    char *t = temp;
+    bool inside = false;
     for (int i = (len - 1); i >= 0; i--)
     {
         if (func[i] == '|')
         {
+            inside = true;
             int left_size = i - 1;
             int right_size = len - i - 2;
             char right[MAX_COMMAND_LENGTH];
@@ -37,29 +39,18 @@ char *ParsePipes(char *func, int len)
             strncpy(left, func + 0, left_size);
             r = ParseFlow(right, right_size);
             l = ParsePipes(left, left_size);
-            if (strcmp(left, l))
-            {
-                l = ParseFlow(left, left_size);
-            }
-            strcat(temp, "|");
-            strcat(temp, "(");
-            strcat(temp, r);
-            strcat(temp, ",");
-            strcat(temp, l);
-            strcat(temp, ")");
+            strcat(t, "|");
+            strcat(t, "(");
+            strcat(t, l);
+            strcat(t, ",");
+            strcat(t, r);
+            strcat(t, ")");
+            func = t;
             break;
         }
     }
-    for (size_t i = 0; i < len; i++)
-    {
-        if (func[i] != temp[i])
-            break;
-        else
-        {
-            if (i == len - 1)
-                func = ParseFlow(func, len);
-        }
-    }
+    if (!inside)
+        func = ParseFlow(func, len);
     return func;
 }
 char *ParseFlow(char *func, int len)
@@ -93,24 +84,15 @@ char *ParseFlow(char *func, int len)
             {
                 strcat(temp, ">");
             }
-            if (func[j] == ">")
-            {
+            if (func[j] == '>')
                 strcat(temp, ">");
-                strcat(temp, "(");
-                strcat(temp, l);
-                strcat(temp, ",");
-                strcat(temp, r);
-                strcat(temp, ")");
-            }
             else
-            {
                 strcat(temp, "<");
-                strcat(temp, "(");
-                strcat(temp, r);
-                strcat(temp, ",");
-                strcat(temp, l);
-                strcat(temp, ")");
-            }
+            strcat(temp, "(");
+            strcat(temp, l);
+            strcat(temp, ",");
+            strcat(temp, r);
+            strcat(temp, ")");
             func = temp;
             break;
         }
