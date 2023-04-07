@@ -77,14 +77,23 @@ char *ParseFlow(char *func, int len)
                 strcat(temp, ">");
             }
             if (func[j] == '>')
+            {
                 strcat(temp, ">");
+                strcat(temp, "(");
+                strcat(temp, r);
+                strcat(temp, ",");
+                strcat(temp, l);
+                strcat(temp, ")");
+            }
             else
+            {
                 strcat(temp, "<");
-            strcat(temp, "(");
-            strcat(temp, l);
-            strcat(temp, ",");
-            strcat(temp, r);
-            strcat(temp, ")");
+                strcat(temp, "(");
+                strcat(temp, l);
+                strcat(temp, ",");
+                strcat(temp, r);
+                strcat(temp, ")");
+            }
             func = temp;
             break;
         }
