@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <dirent.h>
 #include "cdl-text-utils.h"
+#include "pipeline_work.h"
 
 #define MAX_COMMAND_LENGTH 8192
 
@@ -25,7 +26,6 @@ int main()
         return 1;
     }
 
-
     while (true)
     {
         printf(YELLOW "cdl-bsh" COLOR_RESET " - " CYAN "%s" YELLOW BOLD " $ " BOLD_RESET COLOR_RESET, currentDir);
@@ -43,7 +43,6 @@ int main()
 
 int execute_commands(char *cmd, char *currentDir)
 {
-    
 }
 
 // arg = [targetDir(char *), dirVariable(char *)]
@@ -56,7 +55,7 @@ void *change_dir(void *arg)
     memcpy(target, arg, pchar_size);
     memcpy(var, arg + pchar_size, pchar_size);
 
-    if(!is_valid_directory(target))
+    if (!is_valid_directory(target))
         return 1;
 
     *var = *target;

@@ -3,15 +3,15 @@
 #include "cdl-utils.h"
 
 // the parse has the foolowing structure =>  op(destination,source)
-char *ParsePipes(char *func, int len);
-char *ParseFlow(char *func, int len);
+static char *ParsePipes(char *func, int len);
+static char *ParseFlow(char *func, int len);
 char *ParseCommand(char *func, int len);
 // This is the main method
 char *ParseCommand(char *func, int len)
 {
     return ParsePipes(func, len);
 }
-char *ParsePipes(char *func, int len)
+static char *ParsePipes(char *func, int len)
 {
     char temp[MAX_COMMAND_LENGTH];
     char *t = temp;
@@ -45,7 +45,7 @@ char *ParsePipes(char *func, int len)
         func = ParseFlow(func, len);
     return func;
 }
-char *ParseFlow(char *func, int len)
+static char *ParseFlow(char *func, int len)
 {
     for (int j = (len - 1); j >= 0; j--)
     {
