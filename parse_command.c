@@ -1,11 +1,17 @@
-#include <stdbool.h>
-#include <string.h>
 #include "cdl-utils.h"
 
 // the parse has the foolowing structure =>  op(destination,source)
 static char *ParsePipes(char *func, int len);
 static char *ParseFlow(char *func, int len);
+static char *ParseFunction(char *func, int len);
 char *ParseCommand(char *func, int len);
+int main()
+{
+    char func[MAX_COMMAND_LENGTH] = "command1 arg11 arg12 < file1 | command2 arg21";
+    char *f = func;
+    f = ParseCommand(f, strlen(f));
+    printf("%s \n", f);
+}
 // This is the main method
 char *ParseCommand(char *func, int len)
 {
@@ -42,22 +48,25 @@ static char *ParsePipes(char *func, int len)
         }
     }
     if (!inside)
-        func = ParseFlow(func, len);
+        return ParseFlow(func, len);
     return func;
 }
 static char *ParseFlow(char *func, int len)
 {
+    bool inside = false;
     for (int j = (len - 1); j >= 0; j--)
     {
         if ((func[j] == '<') || (func[j] == '>'))
         {
+            inside = true;
             int left_size = j - 1;
             int right_size = len - j - 2;
             char right[MAX_COMMAND_LENGTH];
             char left[MAX_COMMAND_LENGTH];
             char *r = right;
             char *l = left;
-            strncpy(right, func + j + 2, right_size);
+            r = ParseFunction(r, right_size);
+            strncpy(r, func + j + 2, right_size);
             int _double = false;
             // this happend when >> is founded
             if (func[j - 1] == '>')
@@ -98,5 +107,57 @@ static char *ParseFlow(char *func, int len)
             break;
         }
     }
+    if (!inside)
+        return ParseFunction(func, len);
     return func;
+}
+char *ParseFunction(char *func, int len)
+{
+    char temp[len + 1];
+    char *t = temp;
+    // Searching op
+    int op_index = 0;
+    for (size_t i = 0; i < len; i++)
+    {
+        if (func[i] == ' ')
+            break;
+        else
+            op_index = i;
+    }
+    char operator[op_index + 1];
+    // memset(operator, 0, sizeof operator);
+    strncpy(operator, func + 0, op_index + 1);
+    strncat(t, operator+ 0, op_index + 1);
+    strcat(t, "(");
+    int last_index = op_index + 2;
+    bool have_param = false;
+    bool first_param = true;
+    for (size_t i = op_index + 2; i < len; i++)
+    {
+        have_param = true;
+
+        if (func[i] == ' ')
+        {
+            char arg[i - last_index];
+            char *a = arg;
+            strncpy(a, func + last_index, i - last_index);
+            if (first_param)
+                first_param = false;
+            else
+                strcat(t, ",");
+            strncat(t, a, i - last_index);
+            last_index = i + 1;
+        }
+    }
+    if (have_param)
+    {
+        char arg[len - last_index];
+        char *a = arg;
+        if (!first_param)
+            strcat(t, ",");
+        strncpy(a, func + last_index, len);
+        strcat(t, a);
+    }
+    strcat(t, ")");
+    return t;
 }
