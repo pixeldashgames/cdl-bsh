@@ -15,6 +15,17 @@ bool is_valid_directory(char *dir)
     return true;
 }
 
+int indexOf(unsigned long long elem, unsigned long long *array, int cnt)
+{
+    int i;
+    for (i = 0; i < cnt; i++)
+    {
+        if (array[i] == elem)
+            return i;
+    }
+    return -1;
+}
+
 int cntdigits(unsigned long long num)
 {
     int count = 0;
@@ -80,6 +91,9 @@ struct JaggedCharArray splitstr(char *str, char sep)
 
 char *joinarr(struct JaggedCharArray arr, char sep, int count)
 {
+    if (count == 0)
+        return "";
+
     int i;
     int retLen = 0;
     for (i = 0; i < count; i++)
@@ -92,7 +106,7 @@ char *joinarr(struct JaggedCharArray arr, char sep, int count)
     char *pret = ret;
     for (i = 0; i < count - 1; i++)
     {
-        pret = *arr.arr[i];
+        strcpy(pret, arr.arr[i]);
         len = strlen(pret);
         pret[len] = sep;
         pret += len + 1;
