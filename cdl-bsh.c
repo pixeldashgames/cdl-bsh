@@ -206,5 +206,31 @@ char *jobs(struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid 
         processCount++;
     }
 
+    
+
     return joinarr(ret, '\n', processCount);
 }
+
+// If the user doesn't specify a target pid, it should default to the last pid used (pidCounter - 1)
+int fg(pid targetpid, struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid *bgpids, char *fgcmd, volatile sig_atomic_t *fgcflag, pid *fgpid)
+{
+    int index = indexOf(targetpid, bgpids, MAX_BACKGROUND_PROCESSES);
+
+    if(index == -1)
+    {
+        char error[MAX_COMMAND_LENGTH];
+        sprintf(&error, RED BOLD "Could not find background process with pid " BOLD_RESET YELLOW "%d" COLOR_RESET, targetpid);
+        perror(error);
+        return 1;
+    }
+
+    strcpy(fgcmd, bgcmds->arr[index]);
+    *fgcflag = bgcflags[index];
+    *fgpid = bgpids[index];
+
+    bgcflags[index] = FREE_THREAD;
+
+    return 0;
+}
+
+
