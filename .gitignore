@@ -55,3 +55,4 @@ dkms.conf
 # VS Code config
 .vscode/
 .vscode/settings.json
+testing-multithreading.c

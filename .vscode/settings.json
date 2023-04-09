@@ -6,6 +6,9 @@
         "stdio.h": "c",
         "text_utils.h": "c",
         "windows.h": "c",
-        "limits.h": "c"
+        "limits.h": "c",
+        "pthread.h": "c",
+        "dirent.h": "c",
+        "cdl-text-utils.h": "c"
     }
 }

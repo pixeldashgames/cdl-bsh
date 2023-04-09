@@ -7,7 +7,24 @@ bool is_valid_directory(char *dir)
     DIR *pDir;
 
     pDir = opendir(dir);
-    return pDir != NULL;
+    if (pDir == NULL)
+        return false;
+
+    closedir(pDir);
+
+    return true;
+}
+
+int cntdigits(unsigned long long num)
+{
+    int count = 0;
+    do
+    {
+        num /= 10;
+        count++;
+    } while (num > 0);
+
+    return count;
 }
 
 struct JaggedCharArray splitstr(char *str, char sep)
@@ -59,4 +76,28 @@ struct JaggedCharArray splitstr(char *str, char sep)
 
     struct JaggedCharArray jaggedArr = {result, count};
     return jaggedArr;
+}
+
+char *joinarr(struct JaggedCharArray arr, char sep, int count)
+{
+    int i;
+    int retLen = 0;
+    for (i = 0; i < count; i++)
+    {
+        retLen += strlen(arr.arr[i]) + 1;
+    }
+
+    int len;
+    char *ret = malloc(retLen * sizeof(char));
+    char *pret = ret;
+    for (i = 0; i < count - 1; i++)
+    {
+        pret = *arr.arr[i];
+        len = strlen(pret);
+        pret[len] = sep;
+        pret += len + 1;
+    }
+    pret[-1] = '\0';
+
+    return ret;
 }
