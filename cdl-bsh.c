@@ -32,20 +32,20 @@ struct ExecuteArgs
 {
     char *cmd;
     char *currentDir;
-    volatile sig_atomic_t *runningFlag;
+    sig_atomic_t *runningFlag;
 };
 
 int change_dir(char *targetDir, char *dirVariable, mutex_t *cwdmutex);
 void *execute_commands(void *args);
-int findFreeThread(volatile sig_atomic_t *flagArray);
-char *jobs(struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex);
-int fg(pid targetpid, struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex);
+int findFreeThread(sig_atomic_t *flagArray);
+char *jobs(struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex);
+int fg(pid targetpid, struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex);
 
 mutex_t fgmutex = PTHREAD_MUTEX_INITIALIZER;
 // The foreground thread id
 pthread_t foreground;
 // The completed flag for the foreground thread
-volatile sig_atomic_t *fgcflag;
+sig_atomic_t *fgcflag;
 // The processID of the foreground thread
 pid fgpid;
 // The args of the foregroundThread
@@ -86,7 +86,7 @@ int main()
     // Storing background threads
     pthread_t *background = malloc(MAX_BACKGROUND_PROCESSES * sizeof(pthread_t));
     // This will store whether each background thread has finished its execution
-    volatile sig_atomic_t *bgcflags = malloc(MAX_BACKGROUND_PROCESSES * sizeof(sig_atomic_t));
+    sig_atomic_t *bgcflags = malloc(MAX_BACKGROUND_PROCESSES * sizeof(sig_atomic_t));
     // This will store the pid of each background thread
     pid *bgpids = malloc(MAX_BACKGROUND_PROCESSES * sizeof(pid));
     // This stores the execution args of every running thread.
@@ -158,7 +158,7 @@ int main()
             } while (tindex < 0);
 
             // Ptr to the running flag for the new thread
-            volatile sig_atomic_t *flag = bgcflags + tindex * sizeof(sig_atomic_t);
+            sig_atomic_t *flag = bgcflags + tindex * sizeof(sig_atomic_t);
 
             *flag = RUNNING;
 
@@ -170,7 +170,7 @@ int main()
             unlock(&cwdmutex);
             bgargs[tindex]->runningFlag = flag;
 
-            if (pthread_create(background[tindex], NULL, execute_commands, bgargs[tindex]) != 0)
+            if (pthread_create(&background[tindex], NULL, execute_commands, bgargs[tindex]) != 0)
             {
                 perror(RED BOLD "Error creating command thread" BOLD_RESET COLOR_RESET "\n");
                 *flag = FREE_THREAD;
@@ -200,7 +200,7 @@ int main()
             unlock(&cwdmutex);
             fgargs->runningFlag = fgcflag;
 
-            if (pthread_create(foreground, NULL, execute_commands, fgargs) != 0)
+            if (pthread_create(&foreground, NULL, execute_commands, fgargs) != 0)
             {
                 unlock(&fgmutex);
                 perror(RED BOLD "Error creating command thread" BOLD_RESET COLOR_RESET "\n");
@@ -232,7 +232,7 @@ int main()
     free(fgargs);
     free(bgargs);
     free(cmd);
-    cree(bgpids);
+    free(bgpids);
     free(background);
     free(bgcflags);
     free(fgcflag);
@@ -245,7 +245,7 @@ void *execute_commands(void *args)
 {
 }
 
-int findFreeThread(volatile sig_atomic_t *flagArray)
+int findFreeThread(sig_atomic_t *flagArray)
 {
     int i;
     for (i = 0; i < MAX_BACKGROUND_PROCESSES; i++)
@@ -259,21 +259,21 @@ int findFreeThread(volatile sig_atomic_t *flagArray)
 
 int change_dir(char *targetDir, char *dirVariable, mutex_t *cwdmutex)
 {
-    lock(&cwdmutex);
+    lock(cwdmutex);
     bool valid = is_valid_directory(targetDir);
 
     if (!valid)
     {
-        unlock(&cwdmutex);
+        unlock(cwdmutex);
         return 1;
     }
 
     *dirVariable = *targetDir;
-    unlock(&cwdmutex);
+    unlock(cwdmutex);
     return 0;
 }
 
-char *jobs(struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex)
+char *jobs(struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex)
 {
     struct JaggedCharArray ret;
     ret.arr = malloc(MAX_BACKGROUND_PROCESSES * sizeof(char *));
@@ -282,16 +282,16 @@ char *jobs(struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid 
 
     int i;
 
-    lock(&bgmutex);
+    lock(bgmutex);
     for (i = 0; i < MAX_BACKGROUND_PROCESSES; i++)
     {
         if (bgcflags[i] == FREE_THREAD)
             continue;
 
-        sprintf(&ret.arr[processCount], "[%d] %s", bgpids[i], bgcmds->arr[i]);
+        sprintf(ret.arr[processCount], "[%d] %s", bgpids[i], bgcmds->arr[i]);
         processCount++;
     }
-    unlock(&bgmutex);
+    unlock(bgmutex);
 
     char *result = joinarr(ret, '\n', processCount);
     for (i = 0; i < MAX_BACKGROUND_PROCESSES; i++)
@@ -302,17 +302,18 @@ char *jobs(struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid 
 }
 
 // If the user doesn't specify a target pid, it should default to the last pid used (pidCounter - 1)
-int fg(pid targetpid, struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex)
+int fg(pid targetpid, struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex)
 {
-    lock(&bgmutex);
+    lock(bgmutex);
     int index = indexOf(targetpid, bgpids, MAX_BACKGROUND_PROCESSES);
 
     if (index == -1)
     {
-        unlock(&bgmutex);
-        char error[MAX_COMMAND_LENGTH];
-        sprintf(&error, RED BOLD "Could not find background process with pid " BOLD_RESET YELLOW "%d" COLOR_RESET, targetpid);
+        unlock(bgmutex);
+        char *error = malloc(128 * sizeof(char));
+        sprintf(error, RED BOLD "Could not find background process with pid " BOLD_RESET YELLOW "%d" COLOR_RESET, targetpid);
         perror(error);
+        free(error);
         return 1;
     }
 
@@ -324,7 +325,7 @@ int fg(pid targetpid, struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgc
 
     bgcflags[index] = FREE_THREAD;
 
-    unlock(&bgmutex);
+    unlock(bgmutex);
     unlock(&fgmutex);
 
     return 0;
@@ -339,7 +340,7 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
     int retIndex = 1;
     int i;
 
-    lock(&historymutex);
+    lock(historymutex);
     for (i = 0; i < HISTORY_LENGTH; i++)
     {
         int index = (historyptr + i) % HISTORY_LENGTH;
@@ -347,10 +348,10 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
         if (history->arr[index] == NULL)
             continue;
 
-        sprintf(&ret.arr[i], "[%d] %s", retIndex, history->arr[index]);
+        sprintf(ret.arr[i], "[%d] %s", retIndex, history->arr[index]);
         retIndex++;
     }
-    unlock(&historymutex);
+    unlock(historymutex);
 
     char *joined = joinarr(ret, '\n', retIndex - 1);
 
