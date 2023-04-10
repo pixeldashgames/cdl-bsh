@@ -295,7 +295,7 @@ char *jobs(struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, 
 
     char *result = joinarr(ret, '\n', processCount);
     for (i = 0; i < MAX_BACKGROUND_PROCESSES; i++)
-        free(&ret.arr[i]);
+        free(ret.arr[i]);
     free(ret.arr);
 
     return result;
