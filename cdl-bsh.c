@@ -139,6 +139,9 @@ int main()
 
         int cmdLen = strlen(cmd);
 
+        if (cmdLen == 0)
+            continue;
+
         for (i = 0; i < cmdLen; i++)
             if (cmd[i] == '#')
             {
@@ -183,10 +186,15 @@ int main()
             lock(&pidmutex);
             bgpids[tindex] = pidCounter;
             unlock(&bgmutex);
-            lock(&historymutex);
-            strcpy(cmdhistory->arr[historyPointer], cmd);
-            historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
-            unlock(&historymutex);
+
+            if (cmd[0] != ' ')
+            {
+                lock(&historymutex);
+                strcpy(cmdhistory->arr[historyPointer], cmd);
+                historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
+                unlock(&historymutex);
+            }
+
             pidCounter++;
             unlock(&pidmutex);
         }
@@ -212,10 +220,15 @@ int main()
             strcpy(fgcmd, cmd);
             lock(&pidmutex);
             fgpid = pidCounter;
-            lock(&historymutex);
-            strcpy(cmdhistory->arr[historyPointer], cmd);
-            historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
-            unlock(&historymutex);
+
+            if (cmd[0] != ' ')
+            {
+                lock(&historymutex);
+                strcpy(cmdhistory->arr[historyPointer], cmd);
+                historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
+                unlock(&historymutex);
+            }
+
             pidCounter++;
             unlock(&pidmutex);
             unlock(&fgmutex);
