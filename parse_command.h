@@ -1,1 +1,0 @@
-char *ParseCommand(char *func, int len);
