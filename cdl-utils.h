@@ -7,7 +7,6 @@
 #include <limits.h>
 #include <dirent.h>
 #include "cdl-text-utils.h"
-#include "parse_command.h"
 #define MAX_COMMAND_LENGTH 8192
 struct JaggedCharArray
 {
