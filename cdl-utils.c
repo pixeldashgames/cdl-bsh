@@ -49,21 +49,21 @@ struct JaggedCharArray splitstr(char *str, char sep)
 
     for (i = 0; i < strLength; i++)
     {
-
         if (str[i] != sep)
             continue;
 
         int len = i - tokenPointer;
-        size_t size = len * sizeof(char);
         if (len == 0)
         {
             tokenPointer = i + 1;
             continue;
         }
 
-        ret[count] = malloc(size);
+        size_t size = len * sizeof(char);
+        ret[count] = malloc(size + sizeof(char));
 
         memcpy(ret[count], str + tokenPointer, size);
+        ret[count][len] = '\0';
 
         count++;
         tokenPointer = i + 1;
@@ -74,14 +74,16 @@ struct JaggedCharArray splitstr(char *str, char sep)
         int len = strLength - tokenPointer;
         size_t size = len * sizeof(char);
 
-        ret[count] = malloc(size);
+        ret[count] = malloc(size + sizeof(char));
 
         memcpy(ret[count], str + tokenPointer, size);
+        ret[count][len] = '\0';
         count++;
     }
+
     size_t size = count * sizeof(char *);
     char **result = malloc(size);
-    memcpy(ret, result, size);
+    memcpy(result, ret, size);
 
     free(ret);
 
@@ -111,7 +113,9 @@ char *joinarr(struct JaggedCharArray arr, char sep, int count)
         pret[len] = sep;
         pret += len + 1;
     }
-    pret[-1] = '\0';
+    strcpy(pret, arr.arr[count - 1]);
+    len = strlen(pret);
+    pret[len] = '\0';
 
     return ret;
 }

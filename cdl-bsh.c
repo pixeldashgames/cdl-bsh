@@ -32,7 +32,7 @@ struct ExecuteArgs
 {
     char *cmd;
     char *currentDir;
-    volatile sig_atomic_t *runingFlag;
+    volatile sig_atomic_t *runningFlag;
 };
 
 int change_dir(char *targetDir, char *dirVariable, mutex_t *cwdmutex);
@@ -59,7 +59,7 @@ void sigint_handler(int sig)
     if (*fgcflag == FREE_THREAD)
         return;
 
-    lock(fgmutex);
+    lock(&fgmutex);
 
     if (fgstatus == NONE)
     {
@@ -71,7 +71,7 @@ void sigint_handler(int sig)
         pthread_kill(foreground, SIGTERM);
     }
 
-    unlock(fgmutex);
+    unlock(&fgmutex);
 }
 
 int main()
@@ -97,7 +97,7 @@ int main()
     bgcmds->arr = malloc(MAX_BACKGROUND_PROCESSES * sizeof(char *));
 
     fgcflag = malloc(sizeof(sig_atomic_t));
-    fgargs = mallloc(sizeof(struct ExecuteArgs));
+    fgargs = malloc(sizeof(struct ExecuteArgs));
     fgcmd = malloc(MAX_COMMAND_LENGTH * sizeof(char));
 
     mutex_t historymutex = PTHREAD_MUTEX_INITIALIZER;
@@ -131,9 +131,9 @@ int main()
         while (fgcflag != FREE_THREAD)
             continue;
 
-        lock(cwdmutex);
+        lock(&cwdmutex);
         printf(YELLOW "cdl-bsh" COLOR_RESET " - " CYAN "%s" YELLOW BOLD " $ " BOLD_RESET COLOR_RESET, currentDir);
-        unlock(cwdmutex);
+        unlock(&cwdmutex);
 
         fgets(cmd, MAX_COMMAND_LENGTH, stdin);
 
@@ -162,63 +162,63 @@ int main()
 
             *flag = RUNNING;
 
-            lock(bgmutex);
+            lock(&bgmutex);
             bgargs[tindex] = malloc(sizeof(struct ExecuteArgs));
-            bgargs[tindex]->cmd = cmd;
-            lock(cwdmutex);
-            bgargs[tindex]->currentDir = &currentDir;
-            unlock(cwdmutex);
-            bgargs[tindex]->runingFlag = flag;
+            strcpy(bgargs[tindex]->cmd, cmd);
+            lock(&cwdmutex);
+            strcpy(bgargs[tindex]->currentDir, currentDir);
+            unlock(&cwdmutex);
+            bgargs[tindex]->runningFlag = flag;
 
             if (pthread_create(background[tindex], NULL, execute_commands, bgargs[tindex]) != 0)
             {
                 perror(RED BOLD "Error creating command thread" BOLD_RESET COLOR_RESET "\n");
                 *flag = FREE_THREAD;
-                unlock(bgmutex);
+                unlock(&bgmutex);
                 continue;
             }
 
             // Thread created succesfully
-            bgcmds->arr[tindex] = *cmd;
-            lock(pidmutex);
+            strcpy(bgcmds->arr[tindex], cmd);
+            lock(&pidmutex);
             bgpids[tindex] = pidCounter;
-            unlock(bgmutex);
-            lock(historymutex);
-            cmdhistory->arr[historyPointer] = *cmd;
+            unlock(&bgmutex);
+            lock(&historymutex);
+            strcpy(cmdhistory->arr[historyPointer], cmd);
             historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
-            unlock(historymutex);
+            unlock(&historymutex);
             pidCounter++;
-            unlock(pidmutex);
+            unlock(&pidmutex);
         }
         else
         {
-            lock(fgmutex);
+            lock(&fgmutex);
             *fgcflag = RUNNING;
             fgargs->cmd = cmd;
-            lock(cwdmutex);
-            fgargs->currentDir = &currentDir;
-            unlock(cwdmutex);
-            fgargs->runingFlag = fgcflag;
+            lock(&cwdmutex);
+            strcpy(fgargs->currentDir, currentDir);
+            unlock(&cwdmutex);
+            fgargs->runningFlag = fgcflag;
 
             if (pthread_create(foreground, NULL, execute_commands, fgargs) != 0)
             {
-                unlock(fgmutex);
+                unlock(&fgmutex);
                 perror(RED BOLD "Error creating command thread" BOLD_RESET COLOR_RESET "\n");
                 *fgcflag = FREE_THREAD;
                 continue;
             }
 
             fgstatus = NONE;
-            *fgcmd = *cmd;
-            lock(pidmutex);
+            strcpy(fgcmd, cmd);
+            lock(&pidmutex);
             fgpid = pidCounter;
-            lock(historymutex);
-            cmdhistory->arr[historyPointer] = *cmd;
+            lock(&historymutex);
+            strcpy(cmdhistory->arr[historyPointer], cmd);
             historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
-            unlock(historymutex);
+            unlock(&historymutex);
             pidCounter++;
-            unlock(pidmutex);
-            unlock(fgmutex);
+            unlock(&pidmutex);
+            unlock(&fgmutex);
         }
     }
 
@@ -259,17 +259,17 @@ int findFreeThread(volatile sig_atomic_t *flagArray)
 
 int change_dir(char *targetDir, char *dirVariable, mutex_t *cwdmutex)
 {
-    lock(cwdmutex);
+    lock(&cwdmutex);
     bool valid = is_valid_directory(targetDir);
 
     if (!valid)
     {
-        unlock(cwdmutex);
+        unlock(&cwdmutex);
         return 1;
     }
 
     *dirVariable = *targetDir;
-    unlock(cwdmutex);
+    unlock(&cwdmutex);
     return 0;
 }
 
@@ -282,7 +282,7 @@ char *jobs(struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid 
 
     int i;
 
-    lock(bgmutex);
+    lock(&bgmutex);
     for (i = 0; i < MAX_BACKGROUND_PROCESSES; i++)
     {
         if (bgcflags[i] == FREE_THREAD)
@@ -291,7 +291,7 @@ char *jobs(struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid 
         sprintf(&ret.arr[processCount], "[%d] %s", bgpids[i], bgcmds->arr[i]);
         processCount++;
     }
-    unlock(bgmutex);
+    unlock(&bgmutex);
 
     char *result = joinarr(ret, '\n', processCount);
     for (i = 0; i < MAX_BACKGROUND_PROCESSES; i++)
@@ -304,19 +304,19 @@ char *jobs(struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid 
 // If the user doesn't specify a target pid, it should default to the last pid used (pidCounter - 1)
 int fg(pid targetpid, struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex)
 {
-    lock(bgmutex);
+    lock(&bgmutex);
     int index = indexOf(targetpid, bgpids, MAX_BACKGROUND_PROCESSES);
 
     if (index == -1)
     {
-        unlock(bgmutex);
+        unlock(&bgmutex);
         char error[MAX_COMMAND_LENGTH];
         sprintf(&error, RED BOLD "Could not find background process with pid " BOLD_RESET YELLOW "%d" COLOR_RESET, targetpid);
         perror(error);
         return 1;
     }
 
-    lock(fgmutex);
+    lock(&fgmutex);
     strcpy(fgcmd, bgcmds->arr[index]);
     *fgcflag = bgcflags[index];
     fgpid = bgpids[index];
@@ -324,8 +324,8 @@ int fg(pid targetpid, struct JaggedCharArray *bgcmds, volatile sig_atomic_t *bgc
 
     bgcflags[index] = FREE_THREAD;
 
-    unlock(bgmutex);
-    unlock(fgmutex);
+    unlock(&bgmutex);
+    unlock(&fgmutex);
 
     return 0;
 }
@@ -339,7 +339,7 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
     int retIndex = 1;
     int i;
 
-    lock(historymutex);
+    lock(&historymutex);
     for (i = 0; i < HISTORY_LENGTH; i++)
     {
         int index = (historyptr + i) % HISTORY_LENGTH;
@@ -350,7 +350,7 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
         sprintf(&ret.arr[i], "[%d] %s", retIndex, history->arr[index]);
         retIndex++;
     }
-    unlock(historymutex);
+    unlock(&historymutex);
 
     char *joined = joinarr(ret, '\n', retIndex - 1);
 
