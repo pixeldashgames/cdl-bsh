@@ -1,9 +1,9 @@
-#include "cdl-utils.h"
+#include "cdl-utils.c"
 
 // the parse has the foolowing structure =>  op(destination,source)
-static char *ParsePipes(struct JaggedCharArray func_split, int count);
-static char *ParseFlow(char *func);
-static char *ParseFunction(char *func, int len);
+char *ParsePipes(struct JaggedCharArray func_split, int count);
+char *ParseFlow(char *func);
+char *ParseFunction(char *func, int len);
 char *ParseCommand(char *func, int len);
 int main()
 {
@@ -18,9 +18,11 @@ char *ParseCommand(char *func, int len)
     struct JaggedCharArray func_split = splitstr(func, '|');
     return ParsePipes(func_split, func_split.count);
 }
-static char *ParsePipes(struct JaggedCharArray func_split, int count)
+char *ParsePipes(struct JaggedCharArray func_split, int count)
 {
-    char temp[MAX_COMMAND_LENGTH];
+    char *temp = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+    if (temp == NULL)
+        return NULL;
     memset(temp, 0, MAX_COMMAND_LENGTH);
     char *p_temp = temp;
     // Implementing splitstr Leo's Method
@@ -29,47 +31,28 @@ static char *ParsePipes(struct JaggedCharArray func_split, int count)
     {
         strcat(p_temp, "|(");
         char *right = ParseFlow(func_split.arr[count - 1]);
-        strncat(p_temp, right, strlen(right));
+        int right_len = strlen(right);
+        if (right_len > MAX_COMMAND_LENGTH - 3)
+        {
+            right_len = MAX_COMMAND_LENGTH - 3;
+        }
+        strncat(p_temp, right, right_len);
         strcat(temp, ",");
         char *left = ParsePipes(func_split, count - 1);
-        strncat(temp, left, strlen(left));
+        int left_len = strlen(left);
+        if (left_len > MAX_COMMAND_LENGTH - right_len - 4)
+        {
+            left_len = MAX_COMMAND_LENGTH - right_len - 4;
+        }
+        strncat(temp, left, left_len);
         strcat(temp, ")");
+        free(right);
+        free(left);
+        return temp;
     }
     return ParseFlow(func_split.arr[0]);
-    // OLD CODE
-    // char temp[MAX_COMMAND_LENGTH];
-    // char *t = temp;
-    // bool inside = false;
-    // for (int i = (len - 1); i >= 0; i--)
-    //{
-    //    if (func[i] == '|')
-    //    {
-    //        inside = true;
-    //        int left_size = i - 1;
-    //        int right_size = len - i - 2;
-    //        char right[MAX_COMMAND_LENGTH];
-    //        char left[MAX_COMMAND_LENGTH];
-    //        char *r = right;
-    //        char *l = left;
-    //        strncpy(right, func + i + 2, right_size);
-    //        strncpy(left, func + 0, left_size);
-    //        r = ParseFlow(right, right_size);
-    //        l = ParsePipes(left, left_size);
-    //        strcat(t, "|");
-    //        strcat(t, "(");
-    //        strcat(t, l);
-    //        strcat(t, ",");
-    //        strcat(t, r);
-    //        strcat(t, ")");
-    //        func = t;
-    //        break;
-    //    }
-    //}
-    // if (!inside)
-    //    return ParseFlow(func, len);
-    // return func;
 }
-static char *ParseFlow(char *func)
+char *ParseFlow(char *func)
 {
     bool inside = false;
     int len = strlen(func);
@@ -106,20 +89,18 @@ static char *ParseFlow(char *func)
             }
             if (func[j] == '>')
             {
-                strcat(temp, ">");
-                strcat(temp, "(");
-                strcat(temp, r);
+                strcat(temp, ">(");
+                strncat(temp, r, right_size);
                 strcat(temp, ",");
-                strcat(temp, l);
+                strncat(temp, l, left_size);
                 strcat(temp, ")");
             }
             else
             {
-                strcat(temp, "<");
-                strcat(temp, "(");
-                strcat(temp, l);
+                strcat(temp, "<(");
+                strncat(temp, l, left_size);
                 strcat(temp, ",");
-                strcat(temp, r);
+                strncat(temp, r, right_size);
                 strcat(temp, ")");
             }
             func = temp;
