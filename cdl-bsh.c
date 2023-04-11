@@ -107,6 +107,24 @@ int main()
     cmdhistory->arr = malloc(HISTORY_LENGTH * sizeof(char *));
     int historyPointer = 0;
 
+    FILE *hf = fopen("history.txt", "r");
+    if (hf != NULL)
+    {
+        char *hist;
+        int hlen = readtoend(hf, hist);
+        if (hlen != 0)
+        {
+            struct JaggedCharArray arr = splitstr(hist, '\n');
+            free(hist);
+            for (i = 0; i < arr.count; i++)
+            {
+                strcpy(cmdhistory->arr[historyPointer], arr.arr[i]);
+                historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
+            }
+        }
+        fclose(hf);
+    }
+
     mutex_t pidmutex = PTHREAD_MUTEX_INITIALIZER;
 
     pid pidCounter = 0;
@@ -197,6 +215,14 @@ int main()
             strcpy(cmdhistory->arr[historyPointer], cmd);
             historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
             unlock(&historymutex);
+
+            FILE *historyfile;
+            char *hist = history(cmdhistory, historyPointer, &historymutex, false);
+
+            historyfile = fopen("history.txt", "w");
+            fprintf(historyfile, "%s", hist);
+
+            fclose(historyfile);
         }
 
         if (cmd[cmdLen - 1] == '&')
@@ -377,7 +403,7 @@ int fg(pid targetpid, struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pi
     return 0;
 }
 
-char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historymutex)
+char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historymutex, bool addnumbers)
 {
     struct JaggedCharArray ret;
     ret.arr = malloc(HISTORY_LENGTH * sizeof(char *));
@@ -394,7 +420,9 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
         if (history->arr[index] == NULL)
             continue;
 
-        sprintf(ret.arr[i], "[%d] %s", retIndex, history->arr[index]);
+        char fmt[] = addnumbers ? "[%d] %s" : "%s";
+
+        sprintf(ret.arr[i], fmt, retIndex, history->arr[index]);
         retIndex++;
     }
     unlock(historymutex);
