@@ -46,7 +46,7 @@ struct JaggedCharArray splitstr(char *str, char sep)
     int i;
     int tokenPointer = 0;
 
-    char **ret = malloc(strLength * sizeof(char));
+    char **ret = (char **)malloc(strLength * sizeof(char));
 
     for (i = 0; i < strLength; i++)
     {
@@ -208,29 +208,6 @@ int readtoend(FILE *f, char *result)
 
     return file_size;
 }
-
-int readtoend(FILE *f, char *result)
-{
-    long file_size;
-    char *buffer;
-
-    // Determine the size of the file
-    fseek(f, 0, SEEK_END);
-    file_size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    // Allocate memory for the buffer
-    buffer = malloc((file_size + 1) * sizeof(char));
-
-    // Read the entire file into the buffer
-    fread(buffer, file_size, 1, f);
-
-    // Add a null terminator to the end of the buffer
-    buffer[file_size] = '\0';
-
-    return file_size;
-}
-
 // Alfredo
 int *preprocess_pattern(char *pattern)
 {
