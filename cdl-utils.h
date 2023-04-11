@@ -19,3 +19,7 @@ int cntdigits(unsigned long long num);
 struct JaggedCharArray splitstr(char *str, char sep);
 char *joinarr(struct JaggedCharArray arr, char cep, int count);
 int indexOf(unsigned long long elem, unsigned long long *array, int cnt);
+int findstr(char *str, char *tok);
+int extractint(char *str, int startpos, int *len);
+// replaces source[start..len] with target
+void replacestr(char *source, char *target, int start, int len);

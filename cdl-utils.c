@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "cdl-utils.h"
 
 bool is_valid_directory(char *dir)
@@ -118,4 +119,70 @@ char *joinarr(struct JaggedCharArray arr, char sep, int count)
     pret[len] = '\0';
 
     return ret;
+}
+
+// returns the index of the first time tok is matched in str, left to right.
+int findstr(char *str, char *tok)
+{
+    size_t len = strlen(str);
+    size_t toklen = strlen(tok);
+    size_t q = 0; // matched chars so far
+
+    for (int i = 0; i < len; i++)
+    {
+        if (q > 0 && str[i] != tok[q])
+            q = 0; // this works since in the use cases for this function tokens are space separated and
+                   // don't start with a space, so there is no need for a prefix function.
+        if (str[i] == tok[q])
+            q++;
+        if (q == toklen)
+            return i - q + 1;
+    }
+
+    return -1;
+}
+
+// extracts an integer from str that starts in startpos
+int extractint(char *str, int startpos, int *len)
+{
+    size_t maxlen = strlen(str) - startpos;
+    char *num = malloc(maxlen * sizeof(char) + sizeof(char));
+
+    int count = 0;
+
+    while (count < maxlen && (isdigit(str[startpos + count]) || str[startpos + count] == '-'))
+    {
+        num[count] = str[startpos + count];
+        count++;
+    }
+
+    num[count] = '\0';
+
+    *len = count;
+
+    return atoi(num);
+}
+
+void replacestr(char *source, char *target, int start, int len)
+{
+    size_t srclen = strlen(source);
+    size_t tgtlen = strlen(target);
+
+    size_t extralen = srclen - start - len;
+
+    if (extralen == 0)
+    {
+        memcpy(source + start, target, tgtlen * sizeof(char));
+        source[start + tgtlen] = '\0';
+
+        return;
+    }
+
+    char *buffer = malloc(extralen * sizeof(char) + sizeof(char));
+    strcpy(buffer, source + start + len);
+
+    strcpy(source + start, target);
+    strcpy(source + start + tgtlen, buffer);
+
+    free(buffer);
 }
