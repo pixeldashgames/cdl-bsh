@@ -24,3 +24,4 @@ int extractint(char *str, int startpos, int *len);
 // replaces source[start..len] with target
 void replacestr(char *source, char *target, int start, int len);
 int search_pattern(char *text, char *pattern);
+int readtoend(FILE *f, char *result);

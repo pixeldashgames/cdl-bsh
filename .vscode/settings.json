@@ -9,6 +9,7 @@
         "limits.h": "c",
         "pthread.h": "c",
         "dirent.h": "c",
-        "cdl-text-utils.h": "c"
+        "cdl-text-utils.h": "c",
+        "stdlib.h": "c"
     }
 }
