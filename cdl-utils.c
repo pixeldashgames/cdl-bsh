@@ -46,7 +46,7 @@ struct JaggedCharArray splitstr(char *str, char sep)
     int i;
     int tokenPointer = 0;
 
-    char **ret = malloc(strLength * sizeof(char *));
+    char **ret = malloc(strLength * sizeof(char));
 
     for (i = 0; i < strLength; i++)
     {
@@ -185,4 +185,80 @@ void replacestr(char *source, char *target, int start, int len)
     strcpy(source + start + tgtlen, buffer);
 
     free(buffer);
+}
+
+// Alfredo
+int *preprocess_pattern(char *pattern)
+{
+    int m = strlen(pattern);
+
+    int *lps = (int *)malloc(sizeof(int) * m);
+    lps[0] = 0;
+
+    int len = 0;
+    int i = 1;
+    while (i < m)
+    {
+        if (pattern[i] == pattern[len])
+        {
+            len++;
+            lps[i] = len;
+            i++;
+        }
+        else
+        {
+            if (len != 0)
+            {
+                len = lps[len - 1];
+            }
+            else
+            {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+
+    return lps;
+}
+
+int search_pattern(char *text, char *pattern)
+{
+    int n = strlen(text);
+    int m = strlen(pattern);
+
+    int *lps = preprocess_pattern(pattern);
+
+    int i = 0;
+    int j = 0;
+    while (i < n)
+    {
+        if (pattern[j] == text[i])
+        {
+            j++;
+            i++;
+        }
+
+        if (j == m)
+        {
+            // Match found
+            int index = i - j;
+            free(lps);
+            return index;
+        }
+        else if (i < n && pattern[j] != text[i])
+        {
+            if (j != 0)
+            {
+                j = lps[j - 1];
+            }
+            else
+            {
+                i++;
+            }
+        }
+    }
+
+    free(lps);
+    return -1;
 }
