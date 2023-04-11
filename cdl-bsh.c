@@ -150,6 +150,55 @@ int main()
                 break;
             }
 
+        // Finding and replacing again tokens
+        int againidx = findstr(cmd, "again");
+        int againlen = 5;
+        int num, numlen, numidx;
+        bool error = false;
+        while (againidx >= 0)
+        {
+            numidx = againidx + againlen + 1;
+            num = extractint(cmd, numidx, &numlen);
+
+            if (numlen == 0 || num < 1 || num > HISTORY_LENGTH)
+            {
+                perror(RED BOLD "Invalid AGAIN statement, it's argument must be defined explicitly and be a number between 1 and 10." BOLD_RESET COLOR_RESET "\n");
+                error = true;
+                break;
+            }
+
+            int historyidx = (historyPointer + num - 1) % HISTORY_LENGTH;
+
+            if (cmdhistory->arr[historyidx] == NULL)
+            {
+                perror(RED BOLD "Invalid AGAIN statement, it's argument must refer to a valid history location, use the history command to see all valid values." BOLD_RESET COLOR_RESET "\n");
+                error = true;
+                break;
+            }
+
+            int historyLen = strlen(cmdhistory->arr[historyidx]);
+            if (cmdLen + historyLen - againlen - numlen - 1 > MAX_COMMAND_LENGTH)
+            {
+                perror(RED BOLD "Invalid AGAIN statement, inserting the command it refers to into the original command would exceed the maximum permited command length." BOLD_RESET COLOR_RESET "\n");
+                error = true;
+                break;
+            }
+
+            replacestr(cmd, cmdhistory->arr[historyidx], againidx, againlen + numlen + 1);
+
+            againidx = findstr(cmd, "again");
+        }
+        if (error)
+            continue;
+
+        if (cmd[0] != ' ')
+        {
+            lock(&historymutex);
+            strcpy(cmdhistory->arr[historyPointer], cmd);
+            historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
+            unlock(&historymutex);
+        }
+
         if (cmd[cmdLen - 1] == '&')
         {
             cmd[cmdLen - 1] = '\0';
@@ -187,14 +236,6 @@ int main()
             bgpids[tindex] = pidCounter;
             unlock(&bgmutex);
 
-            if (cmd[0] != ' ')
-            {
-                lock(&historymutex);
-                strcpy(cmdhistory->arr[historyPointer], cmd);
-                historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
-                unlock(&historymutex);
-            }
-
             pidCounter++;
             unlock(&pidmutex);
         }
@@ -220,14 +261,6 @@ int main()
             strcpy(fgcmd, cmd);
             lock(&pidmutex);
             fgpid = pidCounter;
-
-            if (cmd[0] != ' ')
-            {
-                lock(&historymutex);
-                strcpy(cmdhistory->arr[historyPointer], cmd);
-                historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
-                unlock(&historymutex);
-            }
 
             pidCounter++;
             unlock(&pidmutex);
