@@ -1,4 +1,4 @@
-#include "cdl-utils.c"
+#include "cdl-utils.h"
 // TODO: fix error using if commands in linux
 
 void execute_command(char *func);
