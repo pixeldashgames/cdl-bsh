@@ -44,7 +44,7 @@ struct JaggedCharArray splitstr(char *str, char sep)
     int i;
     int tokenPointer = 0;
 
-    char **ret = (char **)malloc(strLength * sizeof(char));
+    char **ret = (char **)malloc(strLength * sizeof(char *));
 
     for (i = 0; i < strLength; i++)
     {
