@@ -8,12 +8,29 @@
 #include <dirent.h>
 #include "cdl-text-utils.h"
 #define MAX_COMMAND_LENGTH 8192
+
 struct JaggedCharArray
 {
     char **arr;
     int count;
 };
 
+struct KeyValuePair
+{
+    char *key;
+    char *value;
+    bool hasValue;
+};
+
+struct Dictionary
+{
+    struct KeyValuePair *pairs;
+    int count;
+};
+
+char *dtryget(struct Dictionary dict, char *var, int *outidx);
+int dset(struct Dictionary *dict, char *var, char *value);
+int dremove(struct Dictionary *dict, char *var);
 bool is_valid_directory(char *dir);
 int cntdigits(unsigned long long num);
 struct JaggedCharArray splitstr(char *str, char sep);

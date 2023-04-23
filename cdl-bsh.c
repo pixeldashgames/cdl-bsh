@@ -35,11 +35,15 @@ struct ExecuteArgs
     sig_atomic_t *runningFlag;
 };
 
+char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historymutex, bool addnumbers);
 int change_dir(char *targetDir, char *dirVariable, mutex_t *cwdmutex);
 void *execute_commands(void *args);
 int findFreeThread(sig_atomic_t *flagArray);
 char *jobs(struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex);
 int fg(pid targetpid, struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex);
+int set(struct Dictionary *dict, char *var, char *value);
+char *get(struct Dictionary dict, char *var);
+int unset(struct Dictionary *dict, char *var);
 
 mutex_t fgmutex = PTHREAD_MUTEX_INITIALIZER;
 // The foreground thread id
@@ -360,7 +364,7 @@ char *jobs(struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, 
         if (bgcflags[i] == FREE_THREAD)
             continue;
 
-        sprintf(ret.arr[processCount], "[%d] %s", bgpids[i], bgcmds->arr[i]);
+        sprintf(ret.arr[processCount], "[%llu] %s", bgpids[i], bgcmds->arr[i]);
         processCount++;
     }
     unlock(bgmutex);
@@ -383,7 +387,7 @@ int fg(pid targetpid, struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pi
     {
         unlock(bgmutex);
         char *error = malloc(128 * sizeof(char));
-        sprintf(error, RED BOLD "Could not find background process with pid " BOLD_RESET YELLOW "%d" COLOR_RESET, targetpid);
+        sprintf(error, RED BOLD "Could not find background process with pid " BOLD_RESET YELLOW "%llu" COLOR_RESET, targetpid);
         perror(error);
         free(error);
         return 1;
@@ -420,9 +424,11 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
         if (history->arr[index] == NULL)
             continue;
 
-        char fmt[] = addnumbers ? "[%d] %s" : "%s";
+        if (addnumbers)
+            sprintf(ret.arr[i], "[%d] %s", retIndex, history->arr[index]);
+        else
+            sprintf(ret.arr[i], "%s", history->arr[index]);
 
-        sprintf(ret.arr[i], fmt, retIndex, history->arr[index]);
         retIndex++;
     }
     unlock(historymutex);
@@ -434,4 +440,18 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
     free(ret.arr);
 
     return joined;
+}
+
+int set(struct Dictionary *dict, char *var, char *value)
+{
+    return dset(dict, var, value);
+}
+char *get(struct Dictionary dict, char *var)
+{
+    int i = 0;
+    return dtryget(dict, var, &i);
+}
+int unset(struct Dictionary *dict, char *var)
+{
+    return dremove(dict, var);
 }
