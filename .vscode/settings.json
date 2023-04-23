@@ -10,6 +10,9 @@
         "pthread.h": "c",
         "dirent.h": "c",
         "cdl-text-utils.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "compare": "c",
+        "limits": "c",
+        "*.tcc": "c"
     }
 }

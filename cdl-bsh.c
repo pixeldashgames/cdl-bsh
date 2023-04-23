@@ -40,6 +40,9 @@ void *execute_commands(void *args);
 int findFreeThread(sig_atomic_t *flagArray);
 char *jobs(struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex);
 int fg(pid targetpid, struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex);
+int set(struct Dictionary *dict, char *var, char *value);
+char *get(struct Dictionary dict, char *var);
+int unset(struct Dictionary *dict, char *var);
 
 mutex_t fgmutex = PTHREAD_MUTEX_INITIALIZER;
 // The foreground thread id
@@ -434,4 +437,18 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
     free(ret.arr);
 
     return joined;
+}
+
+int set(struct Dictionary *dict, char *var, char *value)
+{
+    return dset(dict, var, value);
+}
+char *get(struct Dictionary dict, char *var)
+{
+    int i = 0;
+    return dtryget(dict, var, &i);
+}
+int unset(struct Dictionary *dict, char *var)
+{
+    return dremove(dict, var);
 }
