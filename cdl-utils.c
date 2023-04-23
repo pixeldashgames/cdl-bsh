@@ -258,3 +258,104 @@ int dremove(struct Dictionary *dict, char *var)
 
     return 1;
 }
+
+char *clean_command(char *func)
+{
+    struct JaggedCharArray command_clean = splitstr(func, ' ');
+    func = joinarr(command_clean, ' ', command_clean.count);
+}
+
+char *parse_function(char *func, struct JaggedCharArray operators)
+{
+    int function_len = strlen(func);
+
+    for (int i = 0; i < operators.count; i++)
+    {
+        int index = findstr(func, operators.arr[i]);
+        if (index == -1)
+            continue;
+        if (!strcmp(operators.arr[i], "if"))
+        {
+            char *result = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+            memset(result, 0, MAX_COMMAND_LENGTH);
+            strcat(result, "if(");
+            int then_index = findstr(func, "then");
+            int if_then_size = (then_index - 1) - (index + 3);
+            char *command1 = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+            memset(command1, 0, MAX_COMMAND_LENGTH);
+            strncat(command1, func + index + 3, if_then_size);
+            command1 = parse_function(command1, operators);
+            strncat(result, command1, strlen(command1));
+            strcat(result, ",");
+            int else_index = findstr(func, "else");
+            if (else_index != -1)
+            {
+                int then_else_size = else_index - then_index - 6;
+                char *command2 = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+                memset(command2, 0, MAX_COMMAND_LENGTH);
+                strncat(command2, func + then_index + 5, then_else_size);
+                command2 = parse_function(command2, operators);
+                strncat(result, command2, strlen(command2));
+                free(command2);
+            }
+            else
+                else_index = then_index;
+            strcat(result, ",");
+
+            int end_index = findstr(func, "end");
+            int else_end_size = end_index - else_index - 6;
+            char *command3 = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+            memset(command3, 0, MAX_COMMAND_LENGTH);
+            strncat(command3, func + else_index + 5, else_end_size);
+            command3 = parse_function(command3, operators);
+            strncat(result, command3, strlen(command3));
+            strcat(result, ")");
+            free(command1);
+            free(command3);
+            return result;
+        }
+        char *left = malloc(MAX_COMMAND_LENGTH);
+        memset(left, 0, MAX_COMMAND_LENGTH);
+        int k = 0;
+        int l = 0;
+        while (k < index - 1)
+            left[l++] = func[k++];
+        k++;
+        k += strlen(operators.arr[i]) + 1;
+        left[l] = '\0';
+        left = parse_function(left, operators);
+        char *right = malloc(MAX_COMMAND_LENGTH);
+        memset(right, 0, MAX_COMMAND_LENGTH);
+        int ri = 0;
+        while (k < function_len)
+            right[ri++] = func[k++];
+        k++;
+        right[ri] = '\0';
+        right = parse_function(right, operators);
+
+        int result_len = strlen(right) + strlen(left) + strlen(operators.arr[i]) + 4;
+        char *result = malloc(result_len * sizeof(char));
+        memset(result, 0, result_len);
+        int r = 0;
+        for (int j = 0; j < strlen(operators.arr[i]); j++)
+        {
+            result[r++] = operators.arr[i][j];
+        }
+        result[r++] = '(';
+        for (int j = 0; j < strlen(left); j++)
+        {
+            result[r++] = left[j];
+        }
+        result[r++] = ',';
+        for (int j = 0; j < strlen(right); j++)
+        {
+            result[r++] = right[j];
+        }
+        result[r++] = ')';
+        result[r] = '\0';
+        free(left);
+        free(right);
+        return result;
+    }
+    return func;
+}
