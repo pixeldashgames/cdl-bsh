@@ -205,3 +205,55 @@ int readtoend(FILE *f, char *result)
 
     return file_size;
 }
+
+char *dtryget(struct Dictionary dict, char *var, int *outidx)
+{
+    for (int i = 0; i < dict.count; i++)
+        if (dict.pairs[i].key == var)
+        {
+            *outidx = i;
+            return dict.pairs[i].value;
+        }
+
+    *outidx = -1;
+    return NULL;
+}
+
+int dset(struct Dictionary *dict, char *var, char *value)
+{
+    int idx;
+    dtryget(*dict, var, &idx);
+
+    if (idx >= 0)
+    {
+        strcpy(dict->pairs[idx].value, value);
+        return 0;
+    }
+
+    for (int i = 0; i < dict->count; i++)
+    {
+        if (!dict->pairs[i].hasValue)
+        {
+            dict->pairs[i].hasValue = true;
+            strcpy(dict->pairs[i].key, var);
+            strcpy(dict->pairs[i].value, value);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int dremove(struct Dictionary *dict, char *var)
+{
+    int idx;
+    dtryget(*dict, var, &idx);
+
+    if (idx >= 0)
+    {
+        dict->pairs[idx].hasValue = false;
+        return 0;
+    }
+
+    return 1;
+}
