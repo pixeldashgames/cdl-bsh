@@ -1,4 +1,5 @@
 #include "cdl-utils.h"
+#include <ctype.h>
 
 bool is_valid_directory(char *dir)
 {
