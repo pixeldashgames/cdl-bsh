@@ -36,7 +36,6 @@ int cntdigits(unsigned long long num)
 
     return count;
 }
-
 struct JaggedCharArray splitstr(char *str, char sep)
 {
     int strLength = strlen(str);
@@ -262,7 +261,12 @@ int dremove(struct Dictionary *dict, char *var)
 char *clean_command(char *func)
 {
     struct JaggedCharArray command_clean = splitstr(func, ' ');
-    func = joinarr(command_clean, ' ', command_clean.count);
+    for (int i = 0; i < command_clean.count; i++)
+    {
+        printf("%s \n", command_clean.arr[i]);
+    }
+
+    return joinarr(command_clean, ' ', command_clean.count);
 }
 
 char *parse_function(char *func, struct JaggedCharArray operators)

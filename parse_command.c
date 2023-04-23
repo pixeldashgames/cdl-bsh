@@ -5,12 +5,16 @@ void execute_command(char *func);
 
 int main()
 {
-    char a = 'c';
-    char op[] = "; if | > >> < ";
-    char *p_op = op;
+    char *p_op = "; if | > >> < ";
     char *p_command = malloc(MAX_COMMAND_LENGTH * sizeof(char));
-    memset(p_command, 0, MAX_COMMAND_LENGTH);
-    strcat(p_command, "if command1 < file1 then dsa else sad end");
+    memset(p_command, 0, MAX_COMMAND_LENGTH * sizeof(char));
+    strcat(p_command, "if   command1 <   file1  then dsa  else sad end");
+    printf("%s \n", p_command);
+    char *temp = clean_command(p_command);
+    printf("%s \n", temp);
+    strcpy(p_command, temp);
+    free(temp);
+    printf("%s \n", p_command);
     struct JaggedCharArray operators = splitstr(p_op, ' ');
     p_command = parse_function(p_command, operators);
     printf("%s \n", p_command);
