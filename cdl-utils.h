@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <limits.h>
 #include <dirent.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 #include "cdl-text-utils.h"
 #define MAX_COMMAND_LENGTH 8192
 

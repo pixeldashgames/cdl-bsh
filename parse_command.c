@@ -1,72 +1,58 @@
 #include "cdl-utils.h"
 // TODO: fix error using if commands in linux
 
-void execute_command(char *func);
-
+// family and the output saved it in a file, and the second command receive the conten
+//  from that file as input and save its output in the same file, overwritting its content
+int execute(char *command[], bool first);
 int main()
 {
-    char *p_op = "; if | > >> < ";
-    char *p_command = malloc(MAX_COMMAND_LENGTH * sizeof(char));
-    memset(p_command, 0, MAX_COMMAND_LENGTH * sizeof(char));
-    strcat(p_command, "if   command1 <   file1  then dsa  else sad end");
-    printf("%s \n", p_command);
-    char *temp = clean_command(p_command);
-    printf("%s \n", temp);
-    strcpy(p_command, temp);
-    free(temp);
-    printf("%s \n", p_command);
-    struct JaggedCharArray operators = splitstr(p_op, ' ');
-    p_command = parse_function(p_command, operators);
-    printf("%s \n", p_command);
-    free(p_command);
+    char *argv1[] = {"ls", "./", NULL};
+    char *argv2[] = {"grep", "test", "input.txt", NULL};
+    execute(argv1, true);
+    execute(argv2, false);
 }
-
-bool is_expression(char *func)
+int execute(char *command[], bool first)
 {
-    for (int i = 0; i < strlen(func); i++)
+    int fd_input;
+    int fd_output;
+    int status;
+    pid_t pid = fork();
+    if (pid == 0)
     {
-        if (func[i] == '(')
-            return true;
-    }
-    return false;
-}
-void execute_command(char *func)
-{
-    if (!is_expression(func))
-        return;
-    int len = strlen(func);
-    int first_parenthesis = findstr(func, "(");
-    char *op = malloc((first_parenthesis + 1) * sizeof(char));
-    memset(op, 0, first_parenthesis + 1);
-    strncat(op, func, first_parenthesis);
-    int count = 0;
-    int coma_index = 0;
-    for (int i = first_parenthesis + 1; i < len; i++)
-    {
-        if ((func[i] == ',') && (count == 0))
+        if (first)
         {
-            coma_index = i;
+            fd_input = open("input.txt", O_RDWR | O_CREAT | O_TRUNC);
+            dup2(fd_input, STDOUT_FILENO);
+            status = execvp(command[0], command);
+            printf("%i\n", status);
+            if (status == -1)
+            {
+                perror("execlp");
+                return 1;
+            }
         }
-        if (func[i] == '(')
-            count++;
-        if (func[i] == ')')
-            count--;
+        else
+        {
+            fd_input = open("input.txt", O_RDWR);
+            fd_output = open("output.txt", O_RDWR | O_TRUNC);
+            dup2(fd_input, STDIN_FILENO);
+            dup2(fd_output, STDOUT_FILENO);
+            status = execvp(command[0], command);
+            printf("%i\n", status);
+            if (status == -1)
+            {
+                perror("execlp");
+                return 1;
+            }
+        }
     }
-    int left_size = coma_index - first_parenthesis;
-    char *left = malloc((left_size + 1) * sizeof(char));
-    memset(left, 0, left_size + 1);
-    strncpy(left, func + first_parenthesis + 1, left_size);
-    int right_size = len - 1 - coma_index;
-    char *right = malloc((right_size + 1) * sizeof(char));
-    memset(right, 0, right_size + 1);
-    strncpy(right, func + coma_index + 1, right_size);
-    switch (0)
+    else
     {
-    case 1:
-    {
-        break;
+        waitpid(pid, &status, 0);
+        close(fd_input);
+        close(fd_output);
+        dup2(STDIN_FILENO, STDIN_FILENO);
+        dup2(STDOUT_FILENO, STDOUT_FILENO);
     }
-    default:
-        break;
-    }
+    return 0;
 }
