@@ -62,3 +62,4 @@ test txt.txt
 cdl-bsh
 test
 prs
+.vscode/c_cpp_properties.json
