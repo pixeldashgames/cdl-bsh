@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include <sys/wait.h>
 #include "cdl-text-utils.h"
 #define MAX_COMMAND_LENGTH 8192
@@ -45,4 +46,4 @@ void replacestr(char *source, char *target, int start, int len);
 int readtoend(FILE *f, char *result);
 char *clean_command(char *func);
 char *parse_function(char *func, struct JaggedCharArray operators);
-int execute_pipe(char *command[], bool first, int count)
+int execute_pipe(char *command[], bool first, char *files[], int count)

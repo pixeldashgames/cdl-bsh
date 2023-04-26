@@ -1,5 +1,4 @@
 #include "cdl-utils.h"
-#include <ctype.h>
 
 bool is_valid_directory(char *dir)
 {
@@ -363,9 +362,8 @@ char *parse_function(char *func, struct JaggedCharArray operators)
     }
     return func;
 }
-int execute_pipe(char *command[], bool first, int count)
+int execute_pipe(char *command[], bool first, char *files[], int count)
 {
-    char *files[] = {"output0.txt", "output1.txt"};
     int actual_input = STDIN_FILENO;
     int actual_output = STDOUT_FILENO;
     int fd_input;
