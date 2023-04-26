@@ -46,4 +46,4 @@ void replacestr(char *source, char *target, int start, int len);
 int readtoend(FILE *f, char *result);
 char *clean_command(char *func);
 char *parse_function(char *func, struct JaggedCharArray operators);
-int execute_pipe(char *command[], bool first, char *files[], int count)
+int execute_pipe(char *command[], bool first, char *files[], int count);

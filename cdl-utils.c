@@ -362,7 +362,7 @@ char *parse_function(char *func, struct JaggedCharArray operators)
     }
     return func;
 }
-int execute_pipe(char *command[], bool first, char *files[], int count)
+int execute_pipe(char *command[], bool first, char files[], int count)
 {
     int actual_input = STDIN_FILENO;
     int actual_output = STDOUT_FILENO;
