@@ -32,6 +32,8 @@ void execute(char *function, int **count, char files[], bool is_pipe)
 
         struct JaggedCharArray split_function = splitstr(newfunc, ' ');
 
+        free(newfunc);
+
         *split_function.arr[split_function.count - 1] = NULL;
 
         execute_pipe(split_function.arr, FIRST, files, (*count)++);
