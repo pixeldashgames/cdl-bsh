@@ -26,7 +26,14 @@ void execute(char *function, int **count, char files[], bool is_pipe)
         // TODO: append to every command the NULL, getting: char *command[] = {"command","param1",...,"paramN",Null};
         // PD: char *command[] and char **command are the same
 
-        struct JaggedCharArray split_function = splitstr(function, ' ');
+        size_t funlen = strlen(function);
+        char *newfunc = malloc((funlen + 3) * sizeof(char));
+        sprintf(newfunc, "%s $", function);
+
+        struct JaggedCharArray split_function = splitstr(newfunc, ' ');
+
+        *split_function.arr[split_function.count - 1] = NULL;
+
         execute_pipe(split_function.arr, FIRST, files, (*count)++);
         return;
     }
