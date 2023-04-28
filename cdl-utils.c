@@ -362,10 +362,8 @@ char *parse_function(char *func, struct JaggedCharArray operators)
     }
     return func;
 }
-int execute_pipe(char *command[], bool first, char files[], int count)
+int execute_pipe(char *command[], bool first, char *files[], int count)
 {
-    int actual_input = STDIN_FILENO;
-    int actual_output = STDOUT_FILENO;
     int fd_input;
     int fd_output;
     int status;
@@ -374,27 +372,27 @@ int execute_pipe(char *command[], bool first, char files[], int count)
     {
         if (first)
         {
-            fd_input = open(files[0], O_RDWR | O_CREAT | O_TRUNC);
+            fd_input = open(files[0], O_RDWR | O_CREAT | O_TRUNC, 0444);
             dup2(fd_input, STDOUT_FILENO);
             status = execvp(command[0], command);
             printf("%i\n", status);
             if (status == -1)
             {
-                perror("execlp");
+                perror("execvp");
                 return 1;
             }
         }
         else
         {
             fd_input = open(files[(count + 1) % 2], O_RDWR);
-            fd_output = open(files[count % 2], O_RDWR | O_CREAT | O_TRUNC);
+            fd_output = open(files[count % 2], O_RDWR | O_CREAT | O_TRUNC, 0444);
             dup2(fd_input, STDIN_FILENO);
             dup2(fd_output, STDOUT_FILENO);
             status = execvp(command[0], command);
             printf("%i\n", status);
             if (status == -1)
             {
-                perror("execlp");
+                perror("execvp");
                 return 1;
             }
         }
@@ -404,9 +402,9 @@ int execute_pipe(char *command[], bool first, char files[], int count)
         waitpid(pid, &status, 0);
         close(fd_input);
         close(fd_output);
-        remove(files[(count + 1) % 2]);
-        dup2(actual_input, STDIN_FILENO);
-        dup2(actual_output, STDOUT_FILENO);
+        // remove(files[(count + 1) % 2]);
+        dup2(0, STDIN_FILENO);
+        dup2(1, STDOUT_FILENO);
     }
     return 0;
 }
