@@ -31,7 +31,6 @@ typedef unsigned long long pid;
 struct ExecuteArgs
 {
     char *cmd;
-    char *currentDir;
     sig_atomic_t *runningFlag;
 };
 
@@ -136,16 +135,9 @@ int main()
     for (i = 0; i < MAX_BACKGROUND_PROCESSES; i++)
         bgcflags[i] = FREE_THREAD;
 
-    mutex_t cwdmutex = PTHREAD_MUTEX_INITIALIZER;
+    signal(SIGINT, sigint_handler);
 
     char currentDir[PATH_MAX];
-    if (getcwd(currentDir, sizeof(currentDir)) == NULL)
-    {
-        perror(RED "Error acquiring current working directory. Exiting..." COLOR_RESET);
-        return 1;
-    }
-
-    signal(SIGINT, sigint_handler);
 
     while (true)
     {
@@ -153,9 +145,13 @@ int main()
         while (fgcflag != FREE_THREAD)
             continue;
 
-        lock(&cwdmutex);
+        if (getcwd(&currentDir, sizeof(currentDir)) == NULL)
+        {
+            perror(RED "Error acquiring current working directory. Exiting..." COLOR_RESET);
+            return 1;
+        }
+
         printf(YELLOW "cdl-bsh" COLOR_RESET " - " CYAN "%s" YELLOW BOLD " $ " BOLD_RESET COLOR_RESET, currentDir);
-        unlock(&cwdmutex);
 
         fgets(cmd, MAX_COMMAND_LENGTH, stdin);
 
@@ -333,20 +329,17 @@ int findFreeThread(sig_atomic_t *flagArray)
     return -1;
 }
 
-int change_dir(char *targetDir, char *dirVariable, mutex_t *cwdmutex)
+int change_dir(char *targetDir)
 {
     lock(cwdmutex);
     bool valid = is_valid_directory(targetDir);
 
     if (!valid)
     {
-        unlock(cwdmutex);
         return 1;
     }
 
-    *dirVariable = *targetDir;
-    unlock(cwdmutex);
-    return 0;
+    return -1 * chdir(targetDir); // chdir returns -1 on failure, so we multiply it by -1 to keep things constant as we usually return 1 on errors
 }
 
 char *jobs(struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex)
