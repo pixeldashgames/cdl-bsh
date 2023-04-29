@@ -33,6 +33,7 @@ bool is_command(char *function)
     }
     return true;
 }
+bool First = true;
 void main_execute(char *function, int count)
 {
     if (is_command(function))
@@ -42,7 +43,8 @@ void main_execute(char *function, int count)
         copy_string_array(split_func.arr, new_func, split_func.count);
         new_func[split_func.count] = malloc(sizeof(NULL));
         new_func[split_func.count] = NULL;
-        execute_pipe(new_func, (count == 0) ? true : false, files, count);
+        execute_pipe(new_func, First, files, count);
+        First = false;
         free(new_func);
         return;
     }
@@ -54,7 +56,7 @@ void main_execute(char *function, int count)
     int op_len = strlen(op);
     if (op_len == 1 && op[0] == '|')
     {
-        execute(function, 0);
+        execute(function, count);
     }
 }
 void execute(char *function, int count)

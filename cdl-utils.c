@@ -364,35 +364,37 @@ char *parse_function(char *func, struct JaggedCharArray operators)
 }
 int execute_pipe(char *command[], bool first, char *files[], int count)
 {
-    int fd_input;
-    int fd_output;
+    int fd_input = -1;
+    int fd_output = -1;
     int status;
+    bool fd_input_opened = false;
+    bool fd_output_opened = false;
     pid_t pid = fork();
     if (pid == 0)
     {
         if (first)
         {
-            fd_input = open(files[0], O_RDWR | O_CREAT | O_TRUNC);
-            if (fd_input == -1)
+            fd_output = open(files[count % 2], O_WRONLY | O_CREAT | O_TRUNC);
+            if (fd_output == -1)
             {
                 perror("open");
                 exit(EXIT_FAILURE);
             }
-            fflush(stdout);
+            fd_output_opened = true;
             close(STDOUT_FILENO);
-            dup2(fd_input, STDOUT_FILENO);
-            close(fd_input);
+            dup2(fd_output, STDOUT_FILENO);
+            close(fd_output);
             status = execvp(command[0], command);
             perror("execvp");
             exit(EXIT_FAILURE);
         }
         else
         {
-            printf("%i\n", count);
             fd_input = open(files[(count + 1) % 2], O_RDONLY);
-            fd_output = open(files[count % 2], O_RDWR | O_CREAT | O_TRUNC);
-            fflush(stdout);
+            fd_output = open(files[count % 2], O_WRONLY | O_CREAT | O_TRUNC);
             close(STDOUT_FILENO);
+            fd_input_opened = true;
+            fd_output_opened = true;
             dup2(fd_input, STDIN_FILENO);
             dup2(fd_output, STDOUT_FILENO);
             close(fd_input);
@@ -407,11 +409,7 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
         waitpid(pid, &status, 0);
         close(fd_input);
         close(fd_output);
-        fflush(stdin);
-        fflush(stdout);
         remove(files[(count + 1) % 2]);
-        //  dup2(STDIN_FILENO, STDIN_FILENO);
-        //  dup2(STDOUT_FILENO, STDOUT_FILENO);
     }
     return 0;
 }
