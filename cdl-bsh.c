@@ -14,6 +14,8 @@
 #define MAX_COMMAND_LENGTH 8192
 #define MAX_BACKGROUND_PROCESSES 1024
 
+#define MAX_PATH 4096
+
 #define FREE_THREAD 0
 #define RUNNING 1
 
@@ -35,7 +37,7 @@ struct ExecuteArgs
 };
 
 char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historymutex, bool addnumbers);
-int change_dir(char *targetDir, char *dirVariable, mutex_t *cwdmutex);
+int change_dir(char *targetDir);
 void *execute_commands(void *args);
 int findFreeThread(sig_atomic_t *flagArray);
 char *jobs(struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pid *bgpids, mutex_t *bgmutex);
@@ -137,7 +139,7 @@ int main()
 
     signal(SIGINT, sigint_handler);
 
-    char currentDir[PATH_MAX];
+    char currentDir[MAX_PATH];
 
     while (true)
     {
@@ -243,9 +245,6 @@ int main()
             lock(&bgmutex);
             bgargs[tindex] = malloc(sizeof(struct ExecuteArgs));
             strcpy(bgargs[tindex]->cmd, cmd);
-            lock(&cwdmutex);
-            strcpy(bgargs[tindex]->currentDir, currentDir);
-            unlock(&cwdmutex);
             bgargs[tindex]->runningFlag = flag;
 
             if (pthread_create(&background[tindex], NULL, execute_commands, bgargs[tindex]) != 0)
@@ -270,9 +269,6 @@ int main()
             lock(&fgmutex);
             *fgcflag = RUNNING;
             fgargs->cmd = cmd;
-            lock(&cwdmutex);
-            strcpy(fgargs->currentDir, currentDir);
-            unlock(&cwdmutex);
             fgargs->runningFlag = fgcflag;
 
             if (pthread_create(&foreground, NULL, execute_commands, fgargs) != 0)
@@ -312,7 +308,7 @@ int main()
     return 0;
 }
 
-// char *cmd, char *currentDir, sig_atomic_t **runningFlag
+// char *cmd, sig_atomic_t **runningFlag
 void *execute_commands(void *args)
 {
 }
@@ -331,13 +327,10 @@ int findFreeThread(sig_atomic_t *flagArray)
 
 int change_dir(char *targetDir)
 {
-    lock(cwdmutex);
     bool valid = is_valid_directory(targetDir);
 
     if (!valid)
-    {
         return 1;
-    }
 
     return -1 * chdir(targetDir); // chdir returns -1 on failure, so we multiply it by -1 to keep things constant as we usually return 1 on errors
 }

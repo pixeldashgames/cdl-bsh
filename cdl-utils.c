@@ -367,8 +367,6 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
     int fd_input = -1;
     int fd_output = -1;
     int status;
-    bool fd_input_opened = false;
-    bool fd_output_opened = false;
     pid_t pid = fork();
     if (pid == 0)
     {
@@ -380,7 +378,6 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
                 perror("open");
                 exit(EXIT_FAILURE);
             }
-            fd_output_opened = true;
             close(STDOUT_FILENO);
             dup2(fd_output, STDOUT_FILENO);
             close(fd_output);
@@ -393,8 +390,6 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
             fd_input = open(files[(count + 1) % 2], O_RDONLY);
             fd_output = open(files[count % 2], O_WRONLY | O_CREAT | O_TRUNC);
             close(STDOUT_FILENO);
-            fd_input_opened = true;
-            fd_output_opened = true;
             dup2(fd_input, STDIN_FILENO);
             dup2(fd_output, STDOUT_FILENO);
             close(fd_input);
