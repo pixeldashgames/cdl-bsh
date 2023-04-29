@@ -372,29 +372,34 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
     {
         if (first)
         {
-            fd_input = open(files[0], O_RDWR | O_CREAT | O_TRUNC, 0444);
-            dup2(fd_input, STDOUT_FILENO);
-            status = execvp(command[0], command);
-            printf("%i\n", status);
-            if (status == -1)
+            fd_input = open(files[0], O_RDWR | O_CREAT | O_TRUNC);
+            if (fd_input == -1)
             {
-                perror("execvp");
-                return 1;
+                perror("open");
+                exit(EXIT_FAILURE);
             }
+            fflush(stdout);
+            close(STDOUT_FILENO);
+            dup2(fd_input, STDOUT_FILENO);
+            close(fd_input);
+            status = execvp(command[0], command);
+            perror("execvp");
+            exit(EXIT_FAILURE);
         }
         else
         {
-            fd_input = open(files[(count + 1) % 2], O_RDWR);
-            fd_output = open(files[count % 2], O_RDWR | O_CREAT | O_TRUNC, 0444);
+            printf("%i\n", count);
+            fd_input = open(files[(count + 1) % 2], O_RDONLY);
+            fd_output = open(files[count % 2], O_RDWR | O_CREAT | O_TRUNC);
+            fflush(stdout);
+            close(STDOUT_FILENO);
             dup2(fd_input, STDIN_FILENO);
             dup2(fd_output, STDOUT_FILENO);
+            close(fd_input);
+            close(fd_output);
             status = execvp(command[0], command);
-            printf("%i\n", status);
-            if (status == -1)
-            {
-                perror("execvp");
-                return 1;
-            }
+            perror("execvp");
+            exit(EXIT_FAILURE);
         }
     }
     else
@@ -402,9 +407,11 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
         waitpid(pid, &status, 0);
         close(fd_input);
         close(fd_output);
-        // remove(files[(count + 1) % 2]);
-        dup2(0, STDIN_FILENO);
-        dup2(1, STDOUT_FILENO);
+        fflush(stdin);
+        fflush(stdout);
+        remove(files[(count + 1) % 2]);
+        //  dup2(STDIN_FILENO, STDIN_FILENO);
+        //  dup2(STDOUT_FILENO, STDOUT_FILENO);
     }
     return 0;
 }

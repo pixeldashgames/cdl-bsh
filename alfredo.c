@@ -1,15 +1,18 @@
 #include "cdl-utils.h"
-void execute(char *function, int *count);
-// char *files[] = {"/tmp/cdl-temp0.txt", "/tmp/cdl-temp1.txt"};
-char *files[] = {"cdl-temp0.txt", "cdl-temp1.txt"};
+
+void main_execute(char *function, int count);
+void execute(char *function, int count);
+
+char *files[] = {"/mnt/c/Users/alfre/source/cdl-bsh/cdl-temp0.txt", "/mnt/c/Users/alfre/source/cdl-bsh/cdl-temp1.txt"};
+// char *files[] = {"cdl-temp0.txt", "cdl-temp1.txt"};
 int main()
 {
-    char command[] = "ls ./ | gred cdl";
+    char command[] = "ls ./ | grep cdl";
     char op[] = "|";
     char *parse_command = malloc(MAX_COMMAND_LENGTH * sizeof(char));
     parse_command = parse_function(command, splitstr(op, ' '));
-    int count = 0;
-    execute(parse_command, &count);
+
+    main_execute(parse_command, 0);
 }
 void copy_string_array(char **src, char **dest, int size)
 {
@@ -30,7 +33,7 @@ bool is_command(char *function)
     }
     return true;
 }
-void execute(char *function, int *count)
+void main_execute(char *function, int count)
 {
     if (is_command(function))
     {
@@ -39,16 +42,11 @@ void execute(char *function, int *count)
         copy_string_array(split_func.arr, new_func, split_func.count);
         new_func[split_func.count] = malloc(sizeof(NULL));
         new_func[split_func.count] = NULL;
-        printf("%i\n", *count);
-        execute_pipe(new_func, (count == 0) ? true : false, files, *count);
-        dup2(0, STDIN_FILENO);
-        dup2(1, STDOUT_FILENO);
-        (*count)++;
+        execute_pipe(new_func, (count == 0) ? true : false, files, count);
         free(new_func);
         return;
     }
 
-    int comma_index = -1;
     int parenthesis_init = findstr(function, "(");
     char *op = malloc((parenthesis_init + 1) * sizeof(char));
     memset(op, 0, parenthesis_init + 1);
@@ -56,32 +54,39 @@ void execute(char *function, int *count)
     int op_len = strlen(op);
     if (op_len == 1 && op[0] == '|')
     {
-        int parenth_count = 0;
-        int len = strlen(function);
-        for (int i = parenthesis_init + 1; i < len; i++)
-        {
-            if (function[i] == ',' && parenth_count == 0)
-            {
-                comma_index = i;
-                break;
-            }
-            if (function[i] == '(')
-                parenth_count++;
-            if (function[i] == ')')
-                parenth_count--;
-        }
-        int left_size = comma_index - parenthesis_init - 1;
-        char *left = malloc((left_size + 1) * sizeof(char));
-        memset(left, 0, (left_size + 1) * sizeof(char));
-        memcpy(left, function + parenthesis_init + 1, (left_size) * sizeof(char));
-        int right_size = (len - 1) - comma_index - 1;
-        char *right = malloc((right_size + 1) * sizeof(char));
-        memset(right, 0, (right_size + 1) * sizeof(char));
-        memcpy(right, function + comma_index + 1, right_size * sizeof(char));
-        execute(left, &(*count));
-        execute(right, &(*count));
-        free(right);
-        free(left);
+        execute(function, 0);
     }
+}
+void execute(char *function, int count)
+{
+    int parenthesis_init = findstr(function, "(");
+    int comma_index = -1;
+    int parenth_count = 0;
+    int len = strlen(function);
+    for (int i = parenthesis_init + 1; i < len; i++)
+    {
+        if (function[i] == ',' && parenth_count == 0)
+        {
+            comma_index = i;
+            break;
+        }
+        if (function[i] == '(')
+            parenth_count++;
+        if (function[i] == ')')
+            parenth_count--;
+    }
+    int left_size = comma_index - parenthesis_init - 1;
+    char *left = malloc((left_size + 1) * sizeof(char));
+    memset(left, 0, (left_size + 1) * sizeof(char));
+    memcpy(left, function + parenthesis_init + 1, (left_size) * sizeof(char));
+    int right_size = (len - 1) - comma_index - 1;
+    char *right = malloc((right_size + 1) * sizeof(char));
+    memset(right, 0, (right_size + 1) * sizeof(char));
+    memcpy(right, function + comma_index + 1, right_size * sizeof(char));
+    main_execute(left, count);
+    count++;
+    main_execute(right, count);
+    free(right);
+    free(left);
     return;
 }
