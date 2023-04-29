@@ -1,9 +1,8 @@
 #include "cdl-utils.h"
 
-void main_execute(char *function, int count);
-void execute(char *function, int count);
+void main_execute(char *function, int count, char *files[]);
+void execute(char *function, int count, char *files[]);
 
-char *files[] = {"/mnt/c/Users/alfre/source/cdl-bsh/cdl-temp0.txt", "/mnt/c/Users/alfre/source/cdl-bsh/cdl-temp1.txt"};
 // char *files[] = {"cdl-temp0.txt", "cdl-temp1.txt"};
 int main()
 {
@@ -11,8 +10,8 @@ int main()
     char op[] = "|";
     char *parse_command = malloc(MAX_COMMAND_LENGTH * sizeof(char));
     parse_command = parse_function(command, splitstr(op, ' '));
-
-    main_execute(parse_command, 0);
+    char *files[] = {"/mnt/c/Users/alfre/source/cdl-bsh/cdl-temp0.txt", "/mnt/c/Users/alfre/source/cdl-bsh/cdl-temp1.txt"};
+    main_execute(parse_command, 1, files);
 }
 void copy_string_array(char **src, char **dest, int size)
 {
@@ -34,7 +33,7 @@ bool is_command(char *function)
     return true;
 }
 bool First = true;
-void main_execute(char *function, int count)
+void main_execute(char *function, int count, char *files[])
 {
     if (is_command(function))
     {
@@ -56,10 +55,10 @@ void main_execute(char *function, int count)
     int op_len = strlen(op);
     if (op_len == 1 && op[0] == '|')
     {
-        execute(function, count);
+        execute(function, count, files);
     }
 }
-void execute(char *function, int count)
+void execute(char *function, int count, char *files[])
 {
     int parenthesis_init = findstr(function, "(");
     int comma_index = -1;
@@ -85,9 +84,9 @@ void execute(char *function, int count)
     char *right = malloc((right_size + 1) * sizeof(char));
     memset(right, 0, (right_size + 1) * sizeof(char));
     memcpy(right, function + comma_index + 1, right_size * sizeof(char));
-    main_execute(left, count);
+    main_execute(left, count, files);
     count++;
-    main_execute(right, count);
+    main_execute(right, count, files);
     free(right);
     free(left);
     return;

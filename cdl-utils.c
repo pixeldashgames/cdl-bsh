@@ -367,20 +367,18 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
     int fd_input = -1;
     int fd_output = -1;
     int status;
-    bool fd_input_opened = false;
-    bool fd_output_opened = false;
+    mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
     pid_t pid = fork();
     if (pid == 0)
     {
         if (first)
         {
-            fd_output = open(files[count % 2], O_WRONLY | O_CREAT | O_TRUNC);
+            fd_output = open(files[count % 2], O_WRONLY | O_CREAT | O_TRUNC, mode);
             if (fd_output == -1)
             {
                 perror("open");
                 exit(EXIT_FAILURE);
             }
-            fd_output_opened = true;
             close(STDOUT_FILENO);
             dup2(fd_output, STDOUT_FILENO);
             close(fd_output);
@@ -390,11 +388,9 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
         }
         else
         {
-            fd_input = open(files[(count + 1) % 2], O_RDONLY);
-            fd_output = open(files[count % 2], O_WRONLY | O_CREAT | O_TRUNC);
+            fd_input = open(files[(count + 1) % 2], O_RDONLY, mode);
+            fd_output = open(files[count % 2], O_WRONLY | O_CREAT | O_TRUNC, mode);
             close(STDOUT_FILENO);
-            fd_input_opened = true;
-            fd_output_opened = true;
             dup2(fd_input, STDIN_FILENO);
             dup2(fd_output, STDOUT_FILENO);
             close(fd_input);
