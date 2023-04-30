@@ -1,5 +1,6 @@
 #include "cdl-utils.h"
 
+bool First = true;
 bool is_valid_directory(char *dir)
 {
     DIR *pDir;
@@ -483,8 +484,30 @@ bool is_command(char *function)
     }
     return true;
 }
-bool First = true;
-void main_execute(char *function, int count, char *files[])
+char *read_file(char *files[], int count)
+{
+    FILE *fp;
+    long lSize;
+    char *buffer;
+    fp = fopen((First) ? files[count % 2] : files[(count + 1) % 2], "rb");
+    if (!fp)
+        perror("file not found"), exit(1);
+
+    fseek(fp, 0L, SEEK_END);
+    lSize = ftell(fp);
+    rewind(fp);
+
+    buffer = calloc(1, lSize + 1);
+    if (!buffer)
+        fclose(fp), fputs("Memory alloc fails", stderr), exit(1);
+
+    if (1 != fread(buffer, lSize, 1, fp))
+        fclose(fp), free(buffer), fputs("Entire read fails", stderr), exit(1);
+
+    fclose(fp);
+    return buffer;
+}
+void main_execute(char *function, int *count, char *files[])
 {
     if (is_command(function))
     {
@@ -493,7 +516,7 @@ void main_execute(char *function, int count, char *files[])
         copy_string_array(split_func.arr, new_func, split_func.count);
         new_func[split_func.count] = malloc(sizeof(NULL));
         new_func[split_func.count] = NULL;
-        execute_pipe(new_func, First, files, count);
+        execute_pipe(new_func, First, files, *count);
         First = false;
         free(new_func);
         return;
@@ -504,12 +527,38 @@ void main_execute(char *function, int count, char *files[])
     memset(op, 0, parenthesis_init + 1);
     strncpy(op, function, parenthesis_init);
     int op_len = strlen(op);
+    // TODO: make a behavior foreach operator (get set if)
     if (op_len == 1 && op[0] == '|')
     {
-        execute(function, count, files);
+        execute_nonboolean(function, &(*count), files, op);
+    }
+    if (op_len == 1 && op[0] == ';')
+    {
+        execute_nonboolean(function, &(*count), files, op);
+        First = true;
+    }
+    if (strcmp(op, "&&") == 0)
+    {
+        execute_boolean(function, &(*count), files, op);
+    }
+    if (strcmp(op, "||") == 0)
+    {
+        execute_boolean(function, &(*count), files, op);
+    }
+    if (strcmp(op, "true") == 0)
+    {
+        char command[] = "echo 0";
+        struct JaggedCharArray split_command = splitstr(command, ' ');
+        execute_pipe(split_command.arr, true, files, 0);
+    }
+    if (strcmp(op, "false") == 0)
+    {
+        char command[] = "echo 1";
+        struct JaggedCharArray split_command = splitstr(command, ' ');
+        execute_pipe(split_command.arr, true, files, 0);
     }
 }
-void execute(char *function, int count, char *files[])
+void execute_nonboolean(char *function, int *count, char *files[], char *op)
 {
     int parenthesis_init = findstr(function, "(");
     int comma_index = -1;
@@ -535,9 +584,68 @@ void execute(char *function, int count, char *files[])
     char *right = malloc((right_size + 1) * sizeof(char));
     memset(right, 0, (right_size + 1) * sizeof(char));
     memcpy(right, function + comma_index + 1, right_size * sizeof(char));
-    main_execute(left, count, files);
-    count++;
-    main_execute(right, count, files);
+    main_execute(left, &(*count), files);
+    if (strcmp(op, "|") == 0)
+        (*count)++;
+    main_execute(right, &(*count), files);
+    free(right);
+    free(left);
+    return;
+}
+void execute_boolean(char *function, int *count, char *files[], char *op)
+{
+    int parenthesis_init = findstr(function, "(");
+    int comma_index = -1;
+    int parenth_count = 0;
+    int len = strlen(function);
+    for (int i = parenthesis_init + 1; i < len; i++)
+    {
+        if (function[i] == ',' && parenth_count == 0)
+        {
+            comma_index = i;
+            break;
+        }
+        if (function[i] == '(')
+            parenth_count++;
+        if (function[i] == ')')
+            parenth_count--;
+    }
+    int left_size = comma_index - parenthesis_init - 1;
+    char *left = malloc((left_size + 1) * sizeof(char));
+    memset(left, 0, (left_size + 1) * sizeof(char));
+    memcpy(left, function + parenthesis_init + 1, (left_size) * sizeof(char));
+    int right_size = (len - 1) - comma_index - 1;
+    char *right = malloc((right_size + 1) * sizeof(char));
+    memset(right, 0, (right_size + 1) * sizeof(char));
+    memcpy(right, function + comma_index + 1, right_size * sizeof(char));
+    main_execute(left, &(*count), files);
+    First = true;
+    char *output = malloc(5 * sizeof(char));
+    memset(output, 0, 5 * sizeof(char));
+    // read the output
+    output = read_file(files, *count);
+
+    if (strcmp(op, "&&") == 0)
+    {
+        if (strcmp(output, "1\n") == 0)
+        {
+            free(right);
+            free(left);
+            free(output);
+            return;
+        }
+    }
+    if (strcmp(op, "||") == 0)
+    {
+        if (strcmp(output, "0\n") == 0)
+        {
+            free(right);
+            free(left);
+            free(output);
+            return;
+        }
+    }
+    main_execute(right, &(*count), files);
     free(right);
     free(left);
     return;

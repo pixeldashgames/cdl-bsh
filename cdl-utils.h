@@ -9,8 +9,10 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include "cdl-text-utils.h"
 #define MAX_COMMAND_LENGTH 8192
+
 
 struct JaggedCharArray
 {
@@ -47,5 +49,6 @@ int readtoend(FILE *f, char *result);
 char *clean_command(char *func);
 char *parse_function(char *func, struct JaggedCharArray operators);
 int execute_pipe(char *command[], bool first, char *files[], int count);
-void main_execute(char *function, int count, char *files[]);
-void execute(char *function, int count, char *files[]);
+void main_execute(char *function, int *count, char *files[]);
+void execute_nonboolean(char *function, int *count, char *files[], char *op);
+void execute_boolean(char *function, int *count, char *files[], char *op);
