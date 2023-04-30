@@ -267,7 +267,28 @@ char *clean_command(char *func)
 
     return joinarr(command_clean, ' ', command_clean.count);
 }
-
+bool is_binary(char *op)
+{
+    char binary_op[] = "; | && ||";
+    struct JaggedCharArray operators = splitstr(binary_op, ' ');
+    for (int i = 0; i < operators.count; i++)
+    {
+        if (strcmp(op, operators.arr[i]) == 0)
+            return true;
+    }
+    return false;
+}
+bool is_bool(char *op)
+{
+    char bool_op[] = "true false";
+    struct JaggedCharArray operators = splitstr(bool_op, ' ');
+    for (int i = 0; i < operators.count; i++)
+    {
+        if (strcmp(op, operators.arr[i]) == 0)
+            return true;
+    }
+    return false;
+}
 char *parse_function(char *func, struct JaggedCharArray operators)
 {
     int function_len = strlen(func);
@@ -317,48 +338,82 @@ char *parse_function(char *func, struct JaggedCharArray operators)
             free(command3);
             return result;
         }
-        char *left = malloc(MAX_COMMAND_LENGTH);
-        memset(left, 0, MAX_COMMAND_LENGTH);
-        int k = 0;
-        int l = 0;
-        while (k < index - 1)
-            left[l++] = func[k++];
-        k++;
-        k += strlen(operators.arr[i]) + 1;
-        left[l] = '\0';
-        left = parse_function(left, operators);
-        char *right = malloc(MAX_COMMAND_LENGTH);
-        memset(right, 0, MAX_COMMAND_LENGTH);
-        int ri = 0;
-        while (k < function_len)
-            right[ri++] = func[k++];
-        k++;
-        right[ri] = '\0';
-        right = parse_function(right, operators);
+        if (is_binary(operators.arr[i]))
+        {
+            char *left = malloc(MAX_COMMAND_LENGTH);
+            memset(left, 0, MAX_COMMAND_LENGTH);
+            int k = 0;
+            int l = 0;
+            while (k < index - 1)
+                left[l++] = func[k++];
+            k++;
+            k += strlen(operators.arr[i]) + 1;
+            left[l] = '\0';
+            left = parse_function(left, operators);
+            char *right = malloc(MAX_COMMAND_LENGTH);
+            memset(right, 0, MAX_COMMAND_LENGTH);
+            int ri = 0;
+            while (k < function_len)
+                right[ri++] = func[k++];
+            k++;
+            right[ri] = '\0';
+            right = parse_function(right, operators);
 
-        int result_len = strlen(right) + strlen(left) + strlen(operators.arr[i]) + 4;
-        char *result = malloc(result_len * sizeof(char));
-        memset(result, 0, result_len);
-        int r = 0;
-        for (int j = 0; j < strlen(operators.arr[i]); j++)
-        {
-            result[r++] = operators.arr[i][j];
+            int result_len = strlen(right) + strlen(left) + strlen(operators.arr[i]) + 4;
+            char *result = malloc(result_len * sizeof(char));
+            memset(result, 0, result_len);
+            int r = 0;
+            for (int j = 0; j < strlen(operators.arr[i]); j++)
+            {
+                result[r++] = operators.arr[i][j];
+            }
+            result[r++] = '(';
+            for (int j = 0; j < strlen(left); j++)
+            {
+                result[r++] = left[j];
+            }
+            result[r++] = ',';
+            for (int j = 0; j < strlen(right); j++)
+            {
+                result[r++] = right[j];
+            }
+            result[r++] = ')';
+            result[r] = '\0';
+            free(left);
+            free(right);
+            return result;
         }
-        result[r++] = '(';
-        for (int j = 0; j < strlen(left); j++)
+        else
         {
-            result[r++] = left[j];
+            if (is_bool(func))
+            {
+                int result_len = strlen(func) + 3;
+                char *result = malloc(result_len * sizeof(char));
+                memset(result, 0, result_len);
+                strcat(result, func);
+                strcat(result, "()");
+                result[result_len - 1] = '\0';
+                return result;
+            }
+            else
+            {
+                int result_len = strlen(func) + 2;
+                char *result = malloc(result_len * sizeof(char));
+                memset(result, 0, result_len);
+                struct JaggedCharArray parts = splitstr(func, ' ');
+                strcat(result, parts.arr[0]);
+                strcat(result, "(");
+                for (int i = 1; i < parts.count; i++)
+                {
+                    strcat(result, parts.arr[i]);
+                    if (i < parts.count - 1)
+                        strcat(result, ",");
+                }
+                strcat(result, ")");
+                result[result_len - 1] = '\0';
+                return result;
+            }
         }
-        result[r++] = ',';
-        for (int j = 0; j < strlen(right); j++)
-        {
-            result[r++] = right[j];
-        }
-        result[r++] = ')';
-        result[r] = '\0';
-        free(left);
-        free(right);
-        return result;
     }
     return func;
 }
@@ -408,4 +463,82 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
         remove(files[(count + 1) % 2]);
     }
     return 0;
+}
+void copy_string_array(char **src, char **dest, int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        dest[i] = malloc((strlen(src[i]) + 1) * sizeof(char));
+        memset(dest[i], 0, strlen(src[i] + 1));
+        strcpy(dest[i], src[i]);
+    }
+}
+bool is_command(char *function)
+{
+    int len = strlen(function);
+    for (int i = 0; i < len; i++)
+    {
+        if (function[i] == '(')
+            return false;
+    }
+    return true;
+}
+bool First = true;
+void main_execute(char *function, int count, char *files[])
+{
+    if (is_command(function))
+    {
+        struct JaggedCharArray split_func = splitstr(function, ' ');
+        char **new_func = malloc((split_func.count + 1) * sizeof(char *));
+        copy_string_array(split_func.arr, new_func, split_func.count);
+        new_func[split_func.count] = malloc(sizeof(NULL));
+        new_func[split_func.count] = NULL;
+        execute_pipe(new_func, First, files, count);
+        First = false;
+        free(new_func);
+        return;
+    }
+
+    int parenthesis_init = findstr(function, "(");
+    char *op = malloc((parenthesis_init + 1) * sizeof(char));
+    memset(op, 0, parenthesis_init + 1);
+    strncpy(op, function, parenthesis_init);
+    int op_len = strlen(op);
+    if (op_len == 1 && op[0] == '|')
+    {
+        execute(function, count, files);
+    }
+}
+void execute(char *function, int count, char *files[])
+{
+    int parenthesis_init = findstr(function, "(");
+    int comma_index = -1;
+    int parenth_count = 0;
+    int len = strlen(function);
+    for (int i = parenthesis_init + 1; i < len; i++)
+    {
+        if (function[i] == ',' && parenth_count == 0)
+        {
+            comma_index = i;
+            break;
+        }
+        if (function[i] == '(')
+            parenth_count++;
+        if (function[i] == ')')
+            parenth_count--;
+    }
+    int left_size = comma_index - parenthesis_init - 1;
+    char *left = malloc((left_size + 1) * sizeof(char));
+    memset(left, 0, (left_size + 1) * sizeof(char));
+    memcpy(left, function + parenthesis_init + 1, (left_size) * sizeof(char));
+    int right_size = (len - 1) - comma_index - 1;
+    char *right = malloc((right_size + 1) * sizeof(char));
+    memset(right, 0, (right_size + 1) * sizeof(char));
+    memcpy(right, function + comma_index + 1, right_size * sizeof(char));
+    main_execute(left, count, files);
+    count++;
+    main_execute(right, count, files);
+    free(right);
+    free(left);
+    return;
 }

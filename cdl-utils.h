@@ -47,3 +47,5 @@ int readtoend(FILE *f, char *result);
 char *clean_command(char *func);
 char *parse_function(char *func, struct JaggedCharArray operators);
 int execute_pipe(char *command[], bool first, char *files[], int count);
+void main_execute(char *function, int count, char *files[]);
+void execute(char *function, int count, char *files[]);
