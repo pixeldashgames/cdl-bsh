@@ -1,6 +1,8 @@
 #include "cdl-utils.h"
 
 bool First = true;
+char *if_file[] = {"cdl-if-temp.txt"};
+
 bool is_valid_directory(char *dir)
 {
     DIR *pDir;
@@ -313,6 +315,7 @@ char *parse_function(char *func, struct JaggedCharArray operators)
             strncat(result, command1, strlen(command1));
             strcat(result, ",");
             int else_index = findstr(func, "else");
+            bool else_founded = true;
             if (else_index != -1)
             {
                 int then_else_size = else_index - then_index - 6;
@@ -322,11 +325,13 @@ char *parse_function(char *func, struct JaggedCharArray operators)
                 command2 = parse_function(command2, operators);
                 strncat(result, command2, strlen(command2));
                 free(command2);
+                strcat(result, ",");
             }
             else
+            {
                 else_index = then_index;
-            strcat(result, ",");
-
+                else_founded = false;
+            }
             int end_index = findstr(func, "end");
             int else_end_size = end_index - else_index - 6;
             char *command3 = malloc(MAX_COMMAND_LENGTH * sizeof(char));
@@ -334,6 +339,8 @@ char *parse_function(char *func, struct JaggedCharArray operators)
             strncat(command3, func + else_index + 5, else_end_size);
             command3 = parse_function(command3, operators);
             strncat(result, command3, strlen(command3));
+            if (!else_founded)
+                strcat(result, ",");
             strcat(result, ")");
             free(command1);
             free(command3);
@@ -531,31 +538,107 @@ void main_execute(char *function, int *count, char *files[])
     if (op_len == 1 && op[0] == '|')
     {
         execute_nonboolean(function, &(*count), files, op);
+        return;
     }
     if (op_len == 1 && op[0] == ';')
     {
         execute_nonboolean(function, &(*count), files, op);
         First = true;
+        return;
     }
     if (strcmp(op, "&&") == 0)
     {
         execute_boolean(function, &(*count), files, op);
+        return;
     }
     if (strcmp(op, "||") == 0)
     {
         execute_boolean(function, &(*count), files, op);
+        return;
     }
     if (strcmp(op, "true") == 0)
     {
         char command[] = "echo 0";
         struct JaggedCharArray split_command = splitstr(command, ' ');
         execute_pipe(split_command.arr, true, files, 0);
+        return;
     }
     if (strcmp(op, "false") == 0)
     {
         char command[] = "echo 1";
         struct JaggedCharArray split_command = splitstr(command, ' ');
         execute_pipe(split_command.arr, true, files, 0);
+        return;
+    }
+    if (strcmp(op, "if") == 0)
+    {
+        int parenthesis_init = findstr(function, "(");
+        int comma_index = -1;
+        int parenth_count = 0;
+        int len = strlen(function);
+        for (int i = parenthesis_init + 1; i < len; i++)
+        {
+            if (function[i] == ',' && parenth_count == 0)
+            {
+                comma_index = i;
+                break;
+            }
+            if (function[i] == '(')
+                parenth_count++;
+            if (function[i] == ')')
+                parenth_count--;
+        }
+        int first_size = comma_index - parenthesis_init - 1;
+        char *first = malloc((first_size + 1) * sizeof(char));
+        memset(first, 0, (first_size + 1) * sizeof(char));
+        memcpy(first, function + parenthesis_init + 1, (first_size) * sizeof(char));
+        main_execute(first, 0, if_file);
+
+        // second comma search
+        int second_init = parenthesis_init + first_size + 1;
+        comma_index = -1;
+        parenth_count = 0;
+        for (int i = second_init + 1; i < len; i++)
+        {
+            if (function[i] == ',' && parenth_count == 0)
+            {
+                comma_index = i;
+                break;
+            }
+            if (function[i] == '(')
+                parenth_count++;
+            if (function[i] == ')')
+                parenth_count--;
+        }
+        int second_size = comma_index - second_init - 1;
+        char *second = malloc((second_size + 1) * sizeof(char));
+        memset(second, 0, (second_size + 1) * sizeof(char));
+        memcpy(second, function + second_init + 1, (second_size) * sizeof(char));
+        // check if if-statment was true
+        char *output = malloc(5 * sizeof(char));
+        memset(output, 0, 5 * sizeof(char));
+        output = read_file(if_file, 0);
+        printf("if-file: %s", output);
+        if (strcmp(output, "0\n") == 0)
+        {
+            printf("inside if\n");
+            main_execute(second, &(*count), files);
+        }
+
+        // third comma search
+        int third_init = second_init + second_size + 1;
+        int third_size = (len - 1) - third_init - 1;
+        if (third_size == 0)
+            return;
+        char *third = malloc((third_size + 1) * sizeof(char));
+        memset(third, 0, (third_size + 1) * sizeof(char));
+        memcpy(third, function + third_init + 1, (third_size) * sizeof(char));
+        // check if if-statment was true
+        if (strcmp(output, "1\n") == 0)
+        {
+            printf("inside else\n");
+            main_execute(third, &(*count), files);
+        }
     }
 }
 void execute_nonboolean(char *function, int *count, char *files[], char *op)
