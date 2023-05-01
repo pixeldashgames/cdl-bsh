@@ -530,7 +530,7 @@ char *read_file(char *files[], int count)
 // Falta cambiar la direcion de *if_file[] inicializado al inicio de este .c y ubicarlo en tmp/ tambien
 
 // Para debuggear sin conectarse al shell ejecutar: gcc alfredo.c cdl-utils.c -o test
-// Testeando en la carpeta alfredo.c
+// Testeando en el archivo alfredo.c
 
 void main_execute(char *function, int *count, char *files[])
 {
