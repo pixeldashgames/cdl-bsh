@@ -514,6 +514,24 @@ char *read_file(char *files[], int count)
     fclose(fp);
     return buffer;
 }
+
+// Para saber el archivo a guardar/leer el output de los metodos es files[count%2]
+// Para abrir el archivo:
+// mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+// fd_output = open(files[count % 2], O_WRONLY | O_CREAT | O_TRUNC, mode);
+//
+// Despues de terminar de trabajar el archivo: close(fd_output)
+
+// Cada comportamiento de los operadores a implementar se programa dentro de un if
+// Falta crear el comportamiento del comando help
+
+// Para ejecutar el shell desde cdl-bsh primero se llama a parse_function(command, splitstr(op, ' '));
+// Luego a main_execute(parsed_function,0,files) siendo files la direcion de los archivos de salida q se van a generar en tmp/
+// Falta cambiar la direcion de *if_file[] inicializado al inicio de este .c y ubicarlo en tmp/ tambien
+
+// Para debuggear sin conectarse al shell ejecutar: gcc alfredo.c cdl-utils.c -o test
+// Testeando en la carpeta alfredo.c
+
 void main_execute(char *function, int *count, char *files[])
 {
     if (is_command(function))
@@ -593,6 +611,7 @@ void main_execute(char *function, int *count, char *files[])
         memset(first, 0, (first_size + 1) * sizeof(char));
         memcpy(first, function + parenthesis_init + 1, (first_size) * sizeof(char));
         main_execute(first, 0, if_file);
+        First = true;
 
         // second comma search
         int second_init = parenthesis_init + first_size + 1;
@@ -623,6 +642,7 @@ void main_execute(char *function, int *count, char *files[])
         {
             printf("inside if\n");
             main_execute(second, &(*count), files);
+            First = true;
         }
 
         // third comma search
@@ -638,6 +658,7 @@ void main_execute(char *function, int *count, char *files[])
         {
             printf("inside else\n");
             main_execute(third, &(*count), files);
+            First = true;
         }
     }
 }

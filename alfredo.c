@@ -4,7 +4,7 @@ char *files[] = {"cdl-temp0.txt", "cdl-temp1.txt"};
 int main()
 {
     char command[] = "if false then echo 5 else echo 6 end";
-    char op[] = "; || && | get set if true false";
+    char op[] = "; || && | get set if true false help";
     char *parse_command = malloc(MAX_COMMAND_LENGTH * sizeof(char));
     parse_command = parse_function(command, splitstr(op, ' '));
     printf("%s\n", parse_command);
