@@ -432,6 +432,36 @@ int set(struct Dictionary *dict, char *var, char *value)
 {
     return dset(dict, var, value);
 }
+
+char *listvars(struct Dictionary *dict)
+{
+    int i;
+    int count = dict->count;
+    char **lines = malloc(count * sizeof(char *));
+    for (i = 0; i < count; i++)
+    {
+        int keylen = strlen(dict->pairs[i].key);
+        int valuelen = strlen(dict->pairs[i].value);
+        size_t size = (keylen + valuelen + 2) * sizeof(char);
+        lines[i] = malloc(size);
+        char *w = lines[i];
+        strcpy(w, dict->pairs[i].key);
+        w += keylen;
+        *w = '=';
+        w += 1;
+        strcpy(w, dict->pairs[i].value);
+        w += valuelen;
+        *w = '\0';
+    }
+
+    struct JaggedCharArray values = {lines, count};
+    char *ret = joinarr(values, '\n', count);
+    for (i = 0; i < count; i++)
+        free(lines[i]);
+    free(lines);
+    return ret;
+}
+
 char *get(struct Dictionary dict, char *var)
 {
     int i = 0;
