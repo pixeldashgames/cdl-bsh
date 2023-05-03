@@ -35,7 +35,6 @@ struct Dictionary
 char *dtryget(struct Dictionary dict, char *var, int *outidx);
 int dset(struct Dictionary *dict, char *var, char *value);
 int dremove(struct Dictionary *dict, char *var);
-bool is_valid_directory(char *dir);
 int cntdigits(unsigned long long num);
 struct JaggedCharArray splitstr(char *str, char sep);
 char *joinarr(struct JaggedCharArray arr, char cep, int count);

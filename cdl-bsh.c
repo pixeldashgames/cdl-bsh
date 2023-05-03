@@ -55,6 +55,7 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
 void execute_nonboolean(char *function, int *count, char *files[], char *op, struct ExecuteArgs executeArgs);
 void execute_boolean(char *function, int *count, char *files[], char *op, struct ExecuteArgs executeArgs);
 void cleanup_function(void *arg);
+char *read_file(char *files[], int count);
 
 char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historymutex, bool addnumbers);
 int change_dir(char *targetDir);
@@ -145,8 +146,10 @@ int main()
     FILE *hf = fopen("history.txt", "r");
     if (hf != NULL)
     {
-        char *hist;
-        int hlen = readtoend(hf, hist);
+        char *f[] = {"history.txt"};
+        char *hist = read_file(f, 0);
+        int hlen = strlen(hist);
+
         if (hlen != 0)
         {
             struct JaggedCharArray arr = splitstr(hist, '\n');
@@ -436,11 +439,6 @@ int findFreeThread(sig_atomic_t *flagArray)
 
 int change_dir(char *targetDir)
 {
-    bool valid = is_valid_directory(targetDir);
-
-    if (!valid)
-        return 1;
-
     return -1 * chdir(targetDir); // chdir returns -1 on failure, so we multiply it by -1 to keep things constant as we usually return 1 on errors
 }
 
@@ -854,7 +852,7 @@ char *read_file(char *files[], int count)
     return buffer;
 }
 
-int getcmdinput(bool First, bool noargs, char **files, int count, struct JaggedCharArray argsarr, char *out)
+char *getcmdinput(bool First, bool noargs, char **files, int count, struct JaggedCharArray argsarr)
 {
     if (!First && noargs)
     {
@@ -862,32 +860,34 @@ int getcmdinput(bool First, bool noargs, char **files, int count, struct JaggedC
 
         if (infile != NULL)
         {
-            if (readtoend(infile, out) == 0)
+            char *f[] = {files[(count + 1) % 2]};
+            char *out = read_file(f, 0);
+            if (strlen(out) == 0)
             {
                 fclose(infile);
 
-                return 1;
+                return NULL;
             }
 
             fclose(infile);
+            return out;
         }
         else
         {
-            return 1;
+            return NULL;
         }
     }
     else if (First)
     {
         if (noargs)
         {
-            return 1;
+            return NULL;
         }
         else
         {
-            out = joinarr(argsarr, ' ', argsarr.count);
+            return joinarr(argsarr, ' ', argsarr.count);
         }
     }
-    return 0;
 }
 
 // Para saber el archivo a guardar/leer el output de los metodos es files[count%2]
@@ -942,7 +942,8 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
     else
     {
         args = malloc(alen * sizeof(char));
-        memcpy(args, function + parenthesis_init + 1, (alen - 1) * sizeof(char));
+
+        strncpy(args, function + parenthesis_init + 1, alen - 1);
         args[alen] = '\0';
 
         argsarr = splitstr(args, ',');
@@ -961,11 +962,9 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
     }
     if (strcmp(op, "cd") == 0)
     {
-        printf("asd");
+        char *arg = getcmdinput(First, noargs, files, *count, argsarr);
 
-        char *arg;
-
-        if (getcmdinput(First, noargs, files, *count, argsarr, arg) != 0)
+        if (arg == NULL)
         {
             perror(RED "The cd command requires 1 argument" COLOR_RESET);
             return;
@@ -981,10 +980,10 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
     }
     if (strcmp(op, "fg") == 0)
     {
-        char *arg;
         int targetpid;
+        char *arg = getcmdinput(First, noargs, files, *count, argsarr);
 
-        if (getcmdinput(First, noargs, files, *count, argsarr, arg) == 0)
+        if (arg != NULL)
         {
             targetpid = atoi(arg);
         }
@@ -1031,9 +1030,9 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
     }
     if (strcmp(op, "set") == 0)
     {
-        char *arg;
+        char *arg = getcmdinput(First, noargs, files, *count, argsarr);
 
-        if (getcmdinput(First, noargs, files, *count, argsarr, arg) == 0)
+        if (arg != NULL)
         {
             struct JaggedCharArray varval = splitstr(arg, ' ');
             if (varval.count < 2)
@@ -1069,9 +1068,9 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
     }
     if (strcmp(op, "get") == 0)
     {
-        char *arg;
+        char *arg = getcmdinput(First, noargs, files, *count, argsarr);
 
-        if (getcmdinput(First, noargs, files, *count, argsarr, arg) != 0)
+        if (arg == NULL)
         {
             perror(RED "The get command requires 1 argument" COLOR_RESET);
             return;
@@ -1087,9 +1086,9 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
     }
     if (strcmp(op, "unset") == 0)
     {
-        char *arg;
+        char *arg = getcmdinput(First, noargs, files, *count, argsarr);
 
-        if (getcmdinput(First, noargs, files, *count, argsarr, arg) != 0)
+        if (arg == NULL)
         {
             perror(RED "The unset command requires 1 argument" COLOR_RESET);
             return;

@@ -1,18 +1,5 @@
 #include "cdl-utils.h"
 
-bool is_valid_directory(char *dir)
-{
-    DIR *pDir;
-
-    pDir = opendir(dir);
-    if (pDir == NULL)
-        return false;
-
-    closedir(pDir);
-
-    return true;
-}
-
 int indexOf(unsigned long long elem, unsigned long long *array, int cnt)
 {
     int i;
