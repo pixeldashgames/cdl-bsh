@@ -866,7 +866,6 @@ char *read_file(char *files[], int count, bool *First)
     fp = fopen((*First) ? files[count % 2] : files[(count + 1) % 2], "rb");
     if (!fp)
     {
-        perror("file not found");
         return "";
     }
 
@@ -878,7 +877,6 @@ char *read_file(char *files[], int count, bool *First)
     if (!buffer)
     {
         fclose(fp);
-        fputs("Memory alloc fails", stderr);
         return "";
     }
 
@@ -886,7 +884,6 @@ char *read_file(char *files[], int count, bool *First)
     {
         fclose(fp);
         free(buffer);
-        fputs("Entire read fails", stderr);
         return "";
     }
 
