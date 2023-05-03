@@ -151,7 +151,8 @@ int main()
     if (hf != NULL)
     {
         char *f[] = {history_file};
-        char *hist = read_file(f, 0);
+        bool b = true;
+        char *hist = read_file(f, 0, &b);
         int hlen = strlen(hist);
 
         if (hlen != 0)
