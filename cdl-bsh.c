@@ -749,7 +749,7 @@ char *parse_function(char *func, struct JaggedCharArray operators)
             }
             else
             {
-                int result_len = strlen(func) + 2;
+                int result_len = strlen(func) + 3;
                 char *result = malloc(result_len * sizeof(char));
                 memset(result, 0, result_len);
                 struct JaggedCharArray parts = splitstr(func, ' ');
@@ -953,7 +953,7 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
 
     struct JaggedCharArray argsarr;
 
-    if (alen == 1)
+    if (alen <= 1)
     {
         noargs = true;
     }
