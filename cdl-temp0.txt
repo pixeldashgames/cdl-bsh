@@ -1,0 +1,5 @@
+true and false features:
+As result of our code, each command put its output in a file, so we treat true and false like echo 0 and echo 1 respectively. For us, 0 is true and 1 is false
+; && || features:
+For these operators we reuse the way in which we execute the multiple pipes but this time we dont change the counter value (for more understanding execute "help multi-pipe" command) and declare that this command do not recive inputs
+After executing each operator we check if the previous output of the command (0 or 1) and decide whether to execute the next command depending on its behavior
