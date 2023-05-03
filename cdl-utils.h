@@ -12,8 +12,6 @@
 #include <sys/stat.h>
 #include "cdl-text-utils.h"
 #include <signal.h>
-#define MAX_COMMAND_LENGTH 8192
-
 
 struct JaggedCharArray
 {

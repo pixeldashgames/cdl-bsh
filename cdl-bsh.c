@@ -13,8 +13,8 @@
 #include "cdl-utils.h"
 #include <signal.h>
 
-#define MAX_COMMAND_LENGTH 8192
 #define MAX_BACKGROUND_PROCESSES 1024
+#define MAX_COMMAND_LENGTH 8192
 
 #define MAX_PATH 4096
 
@@ -108,7 +108,7 @@ int main()
     int i;
 
     // To store the last command entered by the user.
-    char *cmd = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+    char cmd[MAX_COMMAND_LENGTH];
 
     mutex_t bgmutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -126,6 +126,7 @@ int main()
     bgcmds->arr = malloc(MAX_BACKGROUND_PROCESSES * sizeof(char *));
 
     fgcflag = malloc(sizeof(sig_atomic_t));
+    *fgcflag = FREE_THREAD;
     fgargs = malloc(sizeof(struct ExecuteArgs));
     fgcmd = malloc(MAX_COMMAND_LENGTH * sizeof(char));
 
@@ -147,6 +148,7 @@ int main()
             free(hist);
             for (i = 0; i < arr.count; i++)
             {
+                cmdhistory->arr[historyPointer] = malloc(MAX_COMMAND_LENGTH * sizeof(char));
                 strcpy(cmdhistory->arr[historyPointer], arr.arr[i]);
                 historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
             }
@@ -184,7 +186,7 @@ int main()
 
         printf(YELLOW "cdl-bsh" COLOR_RESET " - " CYAN "%s" YELLOW BOLD " $ " BOLD_RESET COLOR_RESET, currentDir);
 
-        fgets(cmd, MAX_COMMAND_LENGTH, stdin);
+        fgets(cmd, sizeof(cmd), stdin);
 
         int cmdLen = strlen(cmd);
 
@@ -243,12 +245,26 @@ int main()
         if (cmd[0] != ' ')
         {
             lock(&historymutex);
+
+            if (cmdhistory->arr[historyPointer] == NULL)
+            {
+                cmdhistory->arr[historyPointer] = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+            }
+
             strcpy(cmdhistory->arr[historyPointer], cmd);
+
+            printf("%s", cmd);
+
             historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
             unlock(&historymutex);
 
             FILE *historyfile;
+
             char *hist = history(cmdhistory, historyPointer, &historymutex, false);
+
+            printf("%s", hist);
+
+            return 0;
 
             historyfile = fopen("history.txt", "w");
             fprintf(historyfile, "%s", hist);
@@ -489,9 +505,13 @@ int fg(pid targetpid, struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pi
 
 char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historymutex, bool addnumbers)
 {
-    struct JaggedCharArray ret;
-    ret.arr = malloc(HISTORY_LENGTH * sizeof(char *));
-    ret.count = HISTORY_LENGTH;
+
+    struct JaggedCharArray ret = {
+        malloc(HISTORY_LENGTH * sizeof(char *)), HISTORY_LENGTH};
+    for (int i = 0; i < HISTORY_LENGTH; i++)
+    {
+        ret.arr[i] = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+    }
 
     int retIndex = 1;
     int i;
@@ -501,13 +521,13 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
     {
         int index = (historyptr + i) % HISTORY_LENGTH;
 
-        if (history->arr[index] == NULL)
+        if (history->arr[index][0] == '\0')
             continue;
 
         if (addnumbers)
-            sprintf(ret.arr[i], "[%d] %s", retIndex, history->arr[index]);
+            sprintf(ret.arr[retIndex - 1], "[%d] %s", retIndex, history->arr[index]);
         else
-            sprintf(ret.arr[i], "%s", history->arr[index]);
+            sprintf(ret.arr[retIndex - 1], "%s", history->arr[index]);
 
         retIndex++;
     }
@@ -516,7 +536,7 @@ char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historym
     char *joined = joinarr(ret, '\n', retIndex - 1);
 
     for (i = 0; i < HISTORY_LENGTH; i++)
-        free(&ret.arr[i]);
+        free(ret.arr[i]);
     free(ret.arr);
 
     return joined;
@@ -747,6 +767,14 @@ char *parse_function(char *func, struct JaggedCharArray operators)
 }
 int execute_pipe(char *command[], bool first, char *files[], int count)
 {
+    for (int i = 0; command[i] != NULL; i++)
+    {
+        printf("%s", command[i]);
+    }
+    printf("%s", first ? "first" : "not first");
+    printf("%i", count);
+    return 0;
+
     int fd_input = -1;
     int fd_output = -1;
     int status;
@@ -942,6 +970,8 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
     }
     if (strcmp(op, "cd") == 0)
     {
+        printf("asd");
+
         char *arg;
 
         if (getcmdinput(First, noargs, files, *count, argsarr, arg) != 0)
