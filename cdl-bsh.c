@@ -168,12 +168,12 @@ int main()
 
     signal(SIGINT, sigint_handler);
 
-    char currentDir[MAX_PATH];
+    char *currentDir = malloc(MAX_PATH * sizeof(char));
 
     while (true)
     {
         // Wait until the fg thread finishes executing
-        while (fgcflag != FREE_THREAD)
+        while (*fgcflag != FREE_THREAD)
             continue;
 
         if (getcwd(currentDir, sizeof(currentDir)) == NULL)
@@ -344,6 +344,7 @@ int main()
         free(bgargs[i]);
         free(bgcmds->arr[i]);
     }
+    free(currentDir);
     free(bgcmds);
     free(fgcmd);
     free(fgargs);
