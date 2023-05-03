@@ -14,6 +14,7 @@
         "compare": "c",
         "limits": "c",
         "*.tcc": "c",
-        "cctype": "c"
+        "cctype": "c",
+        "signal.h": "c"
     }
 }
