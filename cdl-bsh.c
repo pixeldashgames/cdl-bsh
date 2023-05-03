@@ -54,6 +54,7 @@ int execute_pipe(char *command[], bool first, char *files[], int count);
 void main_execute(char *function, int *count, char *files[], struct ExecuteArgs executeArgs);
 void execute_nonboolean(char *function, int *count, char *files[], char *op, struct ExecuteArgs executeArgs);
 void execute_boolean(char *function, int *count, char *files[], char *op, struct ExecuteArgs executeArgs);
+void cleanup_function(void *arg);
 
 char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historymutex, bool addnumbers);
 int change_dir(char *targetDir);
@@ -175,7 +176,7 @@ int main()
         while (fgcflag != FREE_THREAD)
             continue;
 
-        if (getcwd(&currentDir, sizeof(currentDir)) == NULL)
+        if (getcwd(currentDir, sizeof(currentDir)) == NULL)
         {
             perror(RED "Error acquiring current working directory. Exiting..." COLOR_RESET);
             return 1;
@@ -520,7 +521,7 @@ int set(struct Dictionary *dict, mutex_t *varsmutex, char *var, char *value)
 {
     lock(varsmutex);
     int ret = dset(dict, var, value);
-    unlcok(varsmutex);
+    unlock(varsmutex);
 
     return ret;
 }
