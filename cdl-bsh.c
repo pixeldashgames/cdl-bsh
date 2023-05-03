@@ -209,6 +209,9 @@ int main()
                 break;
             }
 
+        if (cmd[cmdLen - 1] == '\n')
+            cmd[cmdLen - 1] = '\0';
+
         // Finding and replacing again tokens
         int againidx = findstr(cmd, "again");
         int againlen = 5;
@@ -273,7 +276,6 @@ int main()
 
             fclose(historyfile);
         }
-
         if (cmd[cmdLen - 1] == '&')
         {
             cmd[cmdLen - 1] = '\0';
@@ -395,7 +397,7 @@ void *execute_commands(void *args)
     char time_string[30];
     time_t current_time = tv.tv_sec;
     struct tm *local_time = localtime(&current_time);
-    strftime(time_string, sizeof(time_string), "%Y-%m-%dT%H:%M:%S", local_time);
+    strftime(time_string, sizeof(time_string), "%Y-%m-%dT%H-%M-%S", local_time);
     sprintf(time_string + strlen(time_string), "-%03d", (int)tv.tv_usec / 1000);
 
     char *file1path = malloc(50 * sizeof(char));
@@ -412,6 +414,7 @@ void *execute_commands(void *args)
     files[2] = file3path;
 
     int count = 0;
+    First = true;
     main_execute(pcmd, &count, files, *arg);
 
     pthread_cleanup_pop(1);
@@ -502,9 +505,9 @@ int fg(pid targetpid, struct JaggedCharArray *bgcmds, sig_atomic_t *bgcflags, pi
 
 char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historymutex, bool addnumbers)
 {
-
     struct JaggedCharArray ret = {
         malloc(HISTORY_LENGTH * sizeof(char *)), HISTORY_LENGTH};
+
     for (int i = 0; i < HISTORY_LENGTH; i++)
     {
         ret.arr[i] = malloc(MAX_COMMAND_LENGTH * sizeof(char));
@@ -588,6 +591,7 @@ char *get(struct Dictionary dict, mutex_t *varsmutex, char *var)
 
     return ret;
 }
+
 int unset(struct Dictionary *dict, mutex_t *varsmutex, char *var)
 {
     lock(varsmutex);
@@ -607,6 +611,7 @@ char *clean_command(char *func)
 
     return joinarr(command_clean, ' ', command_clean.count);
 }
+
 bool is_binary(char *op)
 {
     char binary_op[] = "; | && ||";
@@ -618,6 +623,7 @@ bool is_binary(char *op)
     }
     return false;
 }
+
 bool is_bool(char *op)
 {
     char bool_op[] = "true false";
@@ -629,6 +635,7 @@ bool is_bool(char *op)
     }
     return false;
 }
+
 char *parse_function(char *func, struct JaggedCharArray operators)
 {
     int function_len = strlen(func);
@@ -762,6 +769,7 @@ char *parse_function(char *func, struct JaggedCharArray operators)
     }
     return func;
 }
+
 int execute_pipe(char *command[], bool first, char *files[], int count)
 {
     int fd_input = -1;
@@ -809,6 +817,7 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
     }
     return 0;
 }
+
 void copy_string_array(char **src, char **dest, int size)
 {
     for (int i = 0; i < size; i++)
@@ -818,6 +827,7 @@ void copy_string_array(char **src, char **dest, int size)
         strcpy(dest[i], src[i]);
     }
 }
+
 bool is_command(char *function)
 {
     int len = strlen(function);
@@ -828,6 +838,7 @@ bool is_command(char *function)
     }
     return true;
 }
+
 char *read_file(char *files[], int count)
 {
     FILE *fp;
@@ -870,6 +881,9 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
             }
 
             fclose(infile);
+            int outlen = strlen(out);
+            if (out[outlen - 1] == '\n')
+                out[outlen - 1] = '\0';
             return out;
         }
         else
@@ -885,7 +899,11 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
         }
         else
         {
-            return joinarr(argsarr, ' ', argsarr.count);
+            char *out = joinarr(argsarr, ' ', argsarr.count);
+            int outlen = strlen(out);
+            if (out[outlen - 1] == '\n')
+                out[outlen - 1] = '\0';
+            return out;
         }
     }
 }
