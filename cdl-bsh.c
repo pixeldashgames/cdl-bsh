@@ -23,6 +23,9 @@
 #define FREE_THREAD 0
 #define RUNNING 1
 
+#define DATA_FOLDER ".cdl-bsh/"
+#define HISTORY_FILE ".cdl-bsh/history"
+
 #define NONE 0
 #define CANCELLED 1
 
@@ -143,10 +146,13 @@ int main()
     }
     int historyPointer = 0;
 
-    FILE *hf = fopen("history.txt", "r");
+    char *historysp = HISTORY_FILE;
+    char *history_file = get_home_subpath(historysp);
+
+    FILE *hf = fopen(history_file, "r");
     if (hf != NULL)
     {
-        char *f[] = {"history.txt"};
+        char *f[] = {history_file};
         char *hist = read_file(f, 0);
         int hlen = strlen(hist);
 
@@ -162,6 +168,18 @@ int main()
             }
         }
         fclose(hf);
+    }
+    else
+    {
+        char *datasp = DATA_FOLDER;
+        char *datafldr = get_home_subpath(datasp);
+
+        if (!directory_exists(datafldr))
+        {
+            mkdir(datafldr, 0755);
+        }
+
+        free(datafldr);
     }
 
     mutex_t varsmutex = PTHREAD_MUTEX_INITIALIZER;
@@ -255,9 +273,6 @@ int main()
         if (error)
             continue;
 
-        printf("a");
-        fflush(stdout);
-
         if (cmd[0] != ' ')
         {
             lock(&historymutex);
@@ -276,7 +291,8 @@ int main()
 
             char *hist = history(cmdhistory, historyPointer, &historymutex, false);
 
-            historyfile = fopen("history.txt", "w");
+            historyfile = fopen(history_file, "w");
+
             fprintf(historyfile, "%s", hist);
 
             fclose(historyfile);
@@ -370,6 +386,7 @@ int main()
         free(bgargs[i]);
         free(bgcmds->arr[i]);
     }
+    free(history_file);
     free(bgcmds);
     free(fgcmd);
     free(fgargs);

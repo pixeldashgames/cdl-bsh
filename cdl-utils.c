@@ -11,6 +11,32 @@ int indexOf(unsigned long long elem, unsigned long long *array, int cnt)
     return -1;
 }
 
+bool directory_exists(const char *path)
+{
+    DIR *dir = opendir(path);
+    if (dir)
+    {
+        closedir(dir);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+char *get_home_subpath(char *sub_path)
+{
+    const char *homedir = getenv("HOME");
+    int homelen = strlen(homedir);
+    int sublen = strlen(sub_path);
+    char *path = malloc((homelen + sublen + 2) * sizeof(char));
+
+    sprintf(path, "%s/%s", homedir, sub_path);
+
+    return path;
+}
+
 int cntdigits(unsigned long long num)
 {
     int count = 0;
