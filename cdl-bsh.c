@@ -178,15 +178,14 @@ int main()
 
     signal(SIGINT, sigint_handler);
 
-    char *currentDir = malloc(MAX_PATH * sizeof(char));
-
     while (true)
     {
         // Wait until the fg thread finishes executing
         while (*fgcflag != FREE_THREAD)
             continue;
 
-        if (getcwd(currentDir, MAX_PATH * sizeof(char)) == NULL)
+        char *currentDir = getcwd(NULL, 0);
+        if (currentDir == NULL)
         {
             perror(RED "Error acquiring current working directory. Exiting..." COLOR_RESET);
             return 1;
@@ -210,7 +209,10 @@ int main()
             }
 
         if (cmd[cmdLen - 1] == '\n')
+        {
             cmd[cmdLen - 1] = '\0';
+            cmdLen -= 1;
+        }
 
         // Finding and replacing again tokens
         int againidx = findstr(cmd, "again");
@@ -253,6 +255,9 @@ int main()
         if (error)
             continue;
 
+        printf("a");
+        fflush(stdout);
+
         if (cmd[0] != ' ')
         {
             lock(&historymutex);
@@ -276,6 +281,7 @@ int main()
 
             fclose(historyfile);
         }
+
         if (cmd[cmdLen - 1] == '&')
         {
             cmd[cmdLen - 1] = '\0';
@@ -364,7 +370,6 @@ int main()
         free(bgargs[i]);
         free(bgcmds->arr[i]);
     }
-    free(currentDir);
     free(bgcmds);
     free(fgcmd);
     free(fgargs);
