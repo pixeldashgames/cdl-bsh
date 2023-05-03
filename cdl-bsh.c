@@ -428,7 +428,7 @@ void *execute_commands(void *args)
 
     sprintf(file1path, "/tmp/cdl-bsh-%s.one.tmp", time_string);
     sprintf(file2path, "/tmp/cdl-bsh-%s.two.tmp", time_string);
-    sprintf(file2path, "/tmp/cdl-bsh-%s.if.tmp", time_string);
+    sprintf(file3path, "/tmp/cdl-bsh-%s.if.tmp", time_string);
 
     char **files = malloc(3 * sizeof(char *));
     files[0] = file1path;
