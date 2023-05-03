@@ -105,7 +105,6 @@ void sigint_handler(int sig)
 
 int main()
 {
-    printf("Start");
     int i;
 
     // To store the last command entered by the user.
@@ -177,7 +176,7 @@ int main()
         while (*fgcflag != FREE_THREAD)
             continue;
 
-        if (getcwd(currentDir, sizeof(currentDir)) == NULL)
+        if (getcwd(currentDir, MAX_PATH * sizeof(char)) == NULL)
         {
             perror(RED "Error acquiring current working directory. Exiting..." COLOR_RESET);
             return 1;
@@ -383,15 +382,21 @@ void *execute_commands(void *args)
 
     char *file1path = malloc(50 * sizeof(char));
     char *file2path = malloc(50 * sizeof(char));
+    char *file3path = malloc(50 * sizeof(char));
 
     sprintf(file1path, "/tmp/cdl-bsh-%s.one.tmp", time_string);
     sprintf(file2path, "/tmp/cdl-bsh-%s.two.tmp", time_string);
+    sprintf(file2path, "/tmp/cdl-bsh-%s.if.tmp", time_string);
 
-    char **files = malloc(2 * sizeof(char *));
+    char **files = malloc(3 * sizeof(char *));
     files[0] = file1path;
     files[1] = file2path;
+    files[2] = file3path;
 
-    main_execute(pcmd, 0, files, *arg);
+    int *count = malloc(sizeof(int));
+    count = 0;
+    main_execute(pcmd, count, files, *arg);
+    free(count);
 
     pthread_cleanup_pop(1);
 }
