@@ -141,12 +141,14 @@ int main()
     }
     int historyPointer = 0;
 
-    FILE *hf = fopen("history.txt", "r");
+    char *historysp = HISTORY_FILE;
+    char *history_file = get_home_subpath(historysp);
+
+    FILE *hf = fopen(history_file, "r");
     if (hf != NULL)
     {
-        char *f[] = {"history.txt"};
-        bool his_bool = true;
-        char *hist = read_file(f, 0, &his_bool);
+        char *f[] = {history_file};
+        char *hist = read_file(f, 0);
         int hlen = strlen(hist);
 
         if (hlen != 0)
@@ -161,6 +163,18 @@ int main()
             }
         }
         fclose(hf);
+    }
+    else
+    {
+        char *datasp = DATA_FOLDER;
+        char *datafldr = get_home_subpath(datasp);
+
+        if (!directory_exists(datafldr))
+        {
+            mkdir(datafldr, 0755);
+        }
+
+        free(datafldr);
     }
 
     mutex_t varsmutex = PTHREAD_MUTEX_INITIALIZER;
@@ -369,6 +383,7 @@ int main()
         free(bgargs[i]);
         free(bgcmds->arr[i]);
     }
+    free(history_file);
     free(bgcmds);
     free(fgcmd);
     free(fgargs);
@@ -404,20 +419,19 @@ void *execute_commands(void *args)
     strftime(time_string, sizeof(time_string), "%Y-%m-%dT%H-%M-%S", local_time);
     sprintf(time_string + strlen(time_string), "-%03d", (int)tv.tv_usec / 1000);
 
-    // char *file1path = malloc(50 * sizeof(char));
-    // char *file2path = malloc(50 * sizeof(char));
-    // char *file3path = malloc(50 * sizeof(char));
-    //
-    // sprintf(file1path, "/tmp/cdl-bsh-%s.one.tmp", time_string);
-    // sprintf(file2path, "/tmp/cdl-bsh-%s.two.tmp", time_string);
-    // sprintf(file3path, "/tmp/cdl-bsh-%s.if.tmp", time_string);
-    //
-    // char **files = malloc(3 * sizeof(char *));
-    // files[0] = file1path;
-    // files[1] = file2path;
-    // files[2] = file3path;
-    //
-    char *files[] = {"./temp0.txt", "./temp1.txt"};
+    char *file1path = malloc(50 * sizeof(char));
+    char *file2path = malloc(50 * sizeof(char));
+    char *file3path = malloc(50 * sizeof(char));
+
+    sprintf(file1path, "/tmp/cdl-bsh-%s.one.tmp", time_string);
+    sprintf(file2path, "/tmp/cdl-bsh-%s.two.tmp", time_string);
+    sprintf(file3path, "/tmp/cdl-bsh-%s.if.tmp", time_string);
+
+    char **files = malloc(3 * sizeof(char *));
+    files[0] = file1path;
+    files[1] = file2path;
+    files[2] = file3path;
+
     int count = 0;
     bool First = true;
     printf("%s\n", pcmd);

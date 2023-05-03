@@ -32,6 +32,8 @@ struct Dictionary
     int count;
 };
 
+char *get_home_subpath(char *sub_path);
+bool directory_exists(const char *path);
 char *dtryget(struct Dictionary dict, char *var, int *outidx);
 int dset(struct Dictionary *dict, char *var, char *value);
 int dremove(struct Dictionary *dict, char *var);
