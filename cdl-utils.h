@@ -14,6 +14,17 @@
 #include <signal.h>
 #define MAX_COMMAND_LENGTH 8192
 
+// help strings
+char help[];
+char help_basics[];
+char help_multipipe[];
+char help_background[];
+char help_spaces[];
+char help_history[];
+char help_ctrl[];
+char help_chain[];
+char help_if[];
+char help_variables[];
 struct JaggedCharArray
 {
     char **arr;
