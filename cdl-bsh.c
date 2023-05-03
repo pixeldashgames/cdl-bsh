@@ -835,7 +835,7 @@ int execute_pipe(char *command[], bool first, char *files[], int count)
         waitpid(pid, &status, 0);
         close(fd_input);
         close(fd_output);
-        remove(files[(count + 1) % 2]);
+        // remove(files[(count + 1) % 2]);
     }
     return 0;
 }
@@ -1268,9 +1268,13 @@ void execute_nonboolean(char *function, int *count, char *files[], char *op, str
     char *right = malloc((right_size + 1) * sizeof(char));
     memset(right, 0, (right_size + 1) * sizeof(char));
     memcpy(right, function + comma_index + 1, right_size * sizeof(char));
+
     main_execute(left, &(*count), files, executeArgs);
     if (strcmp(op, "|") == 0)
         (*count)++;
+
+    printf("%i", *count);
+
     main_execute(right, &(*count), files, executeArgs);
     free(right);
     free(left);
