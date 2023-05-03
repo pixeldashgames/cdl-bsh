@@ -393,10 +393,8 @@ void *execute_commands(void *args)
     files[1] = file2path;
     files[2] = file3path;
 
-    int *count = malloc(sizeof(int));
-    count = 0;
-    main_execute(pcmd, count, files, *arg);
-    free(count);
+    int count = 0;
+    main_execute(pcmd, &count, files, *arg);
 
     pthread_cleanup_pop(1);
 }
@@ -1130,7 +1128,9 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
         char *first = malloc((first_size + 1) * sizeof(char));
         memset(first, 0, (first_size + 1) * sizeof(char));
         memcpy(first, function + parenthesis_init + 1, (first_size) * sizeof(char));
-        main_execute(first, 0, if_file, executeArgs);
+
+        int cnt = 0;
+        main_execute(first, &cnt, if_file, executeArgs);
         First = true;
 
         // second comma search
