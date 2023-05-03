@@ -23,11 +23,11 @@
 #define FREE_THREAD 0
 #define RUNNING 1
 
-#define DATA_FOLDER ".cdl-bsh/"
-#define HISTORY_FILE ".cdl-bsh/history"
-
 #define NONE 0
 #define CANCELLED 1
+
+#define DATA_FOLDER ".cdl-bsh/"
+#define HISTORY_FILE ".cdl-bsh/history"
 
 #define HISTORY_LENGTH 10
 
@@ -54,11 +54,11 @@ struct ExecuteArgs
 };
 
 int execute_pipe(char *command[], bool first, char *files[], int count);
-void main_execute(char *function, int *count, char *files[], struct ExecuteArgs executeArgs);
-void execute_nonboolean(char *function, int *count, char *files[], char *op, struct ExecuteArgs executeArgs);
-void execute_boolean(char *function, int *count, char *files[], char *op, struct ExecuteArgs executeArgs);
+void main_execute(char *function, int *count, char *files[], bool *First, struct ExecuteArgs executeArgs);
+void execute_nonboolean(char *function, int *count, char *files[], char *op, bool *First, struct ExecuteArgs executeArgs);
+void execute_boolean(char *function, int *count, char *files[], char *op, bool *First, struct ExecuteArgs executeArgs);
 void cleanup_function(void *arg);
-char *read_file(char *files[], int count);
+char *read_file(char *files[], int count, bool *First);
 
 char *history(struct JaggedCharArray *history, int historyptr, mutex_t *historymutex, bool addnumbers);
 int change_dir(char *targetDir);
@@ -70,8 +70,6 @@ int set(struct Dictionary *dict, mutex_t *varsmutex, char *var, char *value);
 char *get(struct Dictionary dict, mutex_t *varsmutex, char *var);
 int unset(struct Dictionary *dict, mutex_t *varsmutex, char *var);
 
-// TODO: Change
-bool First = true;
 char *if_file[] = {"cdl-if-temp.txt"};
 
 mutex_t fgmutex = PTHREAD_MUTEX_INITIALIZER;
@@ -273,6 +271,9 @@ int main()
         if (error)
             continue;
 
+        printf("a");
+        fflush(stdout);
+
         if (cmd[0] != ' ')
         {
             lock(&historymutex);
@@ -291,8 +292,7 @@ int main()
 
             char *hist = history(cmdhistory, historyPointer, &historymutex, false);
 
-            historyfile = fopen(history_file, "w");
-
+            historyfile = fopen("history.txt", "w");
             fprintf(historyfile, "%s", hist);
 
             fclose(historyfile);
@@ -436,8 +436,9 @@ void *execute_commands(void *args)
     files[2] = file3path;
 
     int count = 0;
-    First = true;
-    main_execute(pcmd, &count, files, *arg);
+    bool First = true;
+    printf("%s\n", pcmd);
+    main_execute(pcmd, &count, files, &First, *arg);
 
     pthread_cleanup_pop(1);
 }
@@ -794,6 +795,7 @@ char *parse_function(char *func, struct JaggedCharArray operators)
 
 int execute_pipe(char *command[], bool first, char *files[], int count)
 {
+    printf("first: %s, count: %i\n", (first) ? "true" : "false", count);
     int fd_input = -1;
     int fd_output = -1;
     int status;
@@ -861,12 +863,12 @@ bool is_command(char *function)
     return true;
 }
 
-char *read_file(char *files[], int count)
+char *read_file(char *files[], int count, bool *First)
 {
     FILE *fp;
     long lSize;
     char *buffer;
-    fp = fopen((First) ? files[count % 2] : files[(count + 1) % 2], "rb");
+    fp = fopen((*First) ? files[count % 2] : files[(count + 1) % 2], "rb");
     if (!fp)
         perror("file not found"), exit(1);
 
@@ -894,7 +896,7 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
         if (infile != NULL)
         {
             char *f[] = {files[(count + 1) % 2]};
-            char *out = read_file(f, 0);
+            char *out = read_file(f, 0, &First);
             if (strlen(out) == 0)
             {
                 fclose(infile);
@@ -946,8 +948,7 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
 
 // Para debuggear sin conectarse al shell ejecutar: gcc alfredo.c cdl-utils.c -o test
 // Testeando en el archivo alfredo.c
-
-void main_execute(char *function, int *count, char *files[], struct ExecuteArgs executeArgs)
+void main_execute(char *function, int *count, char *files[], bool *First, struct ExecuteArgs executeArgs)
 {
     if (is_command(function))
     {
@@ -956,8 +957,8 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
         copy_string_array(split_func.arr, new_func, split_func.count);
         new_func[split_func.count] = malloc(sizeof(NULL));
         new_func[split_func.count] = NULL;
-        execute_pipe(new_func, First, files, *count);
-        First = false;
+        int f = execute_pipe(new_func, *First, files, *count);
+        *First = false;
         free(new_func);
         return;
     }
@@ -991,13 +992,13 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
 
     if (op_len == 1 && op[0] == '|')
     {
-        execute_nonboolean(function, &(*count), files, op, executeArgs);
+        execute_nonboolean(function, &(*count), files, op, &(*First), executeArgs);
         return;
     }
     if (op_len == 1 && op[0] == ';')
     {
-        execute_nonboolean(function, &(*count), files, op, executeArgs);
-        First = true;
+        execute_nonboolean(function, &(*count), files, op, &(*First), executeArgs);
+        *First = true;
         return;
     }
     if (strcmp(op, "cd") == 0)
@@ -1144,12 +1145,12 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
     }
     if (strcmp(op, "&&") == 0)
     {
-        execute_boolean(function, &(*count), files, op, executeArgs);
+        execute_boolean(function, &(*count), files, op, &(*First), executeArgs);
         return;
     }
     if (strcmp(op, "||") == 0)
     {
-        execute_boolean(function, &(*count), files, op, executeArgs);
+        execute_boolean(function, &(*count), files, op, &(*First), executeArgs);
         return;
     }
     if (strcmp(op, "true") == 0)
@@ -1190,8 +1191,8 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
         memcpy(first, function + parenthesis_init + 1, (first_size) * sizeof(char));
 
         int cnt = 0;
-        main_execute(first, &cnt, if_file, executeArgs);
-        First = true;
+        main_execute(first, &cnt, if_file, &(*First), executeArgs);
+        *First = true;
 
         // second comma search
         int second_init = parenthesis_init + first_size + 1;
@@ -1216,13 +1217,10 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
         // check if if-statment was true
         char *output = malloc(5 * sizeof(char));
         memset(output, 0, 5 * sizeof(char));
-        output = read_file(if_file, 0);
-        printf("if-file: %s", output);
+        output = read_file(if_file, 0, &(*First));
         if (strcmp(output, "0\n") == 0)
         {
-            printf("inside if\n");
-            main_execute(second, &(*count), files, executeArgs);
-            First = true;
+            main_execute(second, &(*count), files, &(*First), executeArgs);
         }
 
         // third comma search
@@ -1236,13 +1234,11 @@ void main_execute(char *function, int *count, char *files[], struct ExecuteArgs 
         // check if if-statment was true
         if (strcmp(output, "1\n") == 0)
         {
-            printf("inside else\n");
-            main_execute(third, &(*count), files, executeArgs);
-            First = true;
+            main_execute(third, &(*count), files, &(*First), executeArgs);
         }
     }
 }
-void execute_nonboolean(char *function, int *count, char *files[], char *op, struct ExecuteArgs executeArgs)
+void execute_nonboolean(char *function, int *count, char *files[], char *op, bool *First, struct ExecuteArgs executeArgs)
 {
     int parenthesis_init = findstr(function, "(");
     int comma_index = -1;
@@ -1268,19 +1264,19 @@ void execute_nonboolean(char *function, int *count, char *files[], char *op, str
     char *right = malloc((right_size + 1) * sizeof(char));
     memset(right, 0, (right_size + 1) * sizeof(char));
     memcpy(right, function + comma_index + 1, right_size * sizeof(char));
-
-    main_execute(left, &(*count), files, executeArgs);
+    main_execute(left, &(*count), files, &(*First), executeArgs);
     if (strcmp(op, "|") == 0)
         (*count)++;
 
     printf("%i", *count);
 
-    main_execute(right, &(*count), files, executeArgs);
+    main_execute(right, &(*count), files, &(*First), executeArgs);
     free(right);
     free(left);
     return;
 }
-void execute_boolean(char *function, int *count, char *files[], char *op, struct ExecuteArgs executeArgs)
+
+void execute_boolean(char *function, int *count, char *files[], char *op, bool *First, struct ExecuteArgs executeArgs)
 {
     int parenthesis_init = findstr(function, "(");
     int comma_index = -1;
@@ -1306,12 +1302,12 @@ void execute_boolean(char *function, int *count, char *files[], char *op, struct
     char *right = malloc((right_size + 1) * sizeof(char));
     memset(right, 0, (right_size + 1) * sizeof(char));
     memcpy(right, function + comma_index + 1, right_size * sizeof(char));
-    main_execute(left, &(*count), files, executeArgs);
-    First = true;
+    main_execute(left, &(*count), files, &(*First), executeArgs);
+    *First = true;
     char *output = malloc(5 * sizeof(char));
     memset(output, 0, 5 * sizeof(char));
     // read the output
-    output = read_file(files, *count);
+    output = read_file(files, *count, &(*First));
 
     if (strcmp(op, "&&") == 0)
     {
@@ -1333,7 +1329,7 @@ void execute_boolean(char *function, int *count, char *files[], char *op, struct
             return;
         }
     }
-    main_execute(right, &(*count), files, executeArgs);
+    main_execute(right, &(*count), files, &(*First), executeArgs);
     free(right);
     free(left);
     return;
