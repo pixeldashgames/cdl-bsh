@@ -135,6 +135,11 @@ int main()
     struct JaggedCharArray *cmdhistory = malloc(sizeof(struct JaggedCharArray));
     cmdhistory->count = HISTORY_LENGTH;
     cmdhistory->arr = malloc(HISTORY_LENGTH * sizeof(char *));
+    for (i = 0; i < HISTORY_LENGTH; i++)
+    {
+        cmdhistory->arr[i] = malloc(MAX_COMMAND_LENGTH * sizeof(char));
+        cmdhistory->arr[i][0] = '\0';
+    }
     int historyPointer = 0;
 
     FILE *hf = fopen("history.txt", "r");
@@ -253,18 +258,12 @@ int main()
 
             strcpy(cmdhistory->arr[historyPointer], cmd);
 
-            printf("%s", cmd);
-
             historyPointer = (historyPointer + 1) % HISTORY_LENGTH;
             unlock(&historymutex);
 
             FILE *historyfile;
 
             char *hist = history(cmdhistory, historyPointer, &historymutex, false);
-
-            printf("%s", hist);
-
-            return 0;
 
             historyfile = fopen("history.txt", "w");
             fprintf(historyfile, "%s", hist);
@@ -767,14 +766,6 @@ char *parse_function(char *func, struct JaggedCharArray operators)
 }
 int execute_pipe(char *command[], bool first, char *files[], int count)
 {
-    for (int i = 0; command[i] != NULL; i++)
-    {
-        printf("%s", command[i]);
-    }
-    printf("%s", first ? "first" : "not first");
-    printf("%i", count);
-    return 0;
-
     int fd_input = -1;
     int fd_output = -1;
     int status;
