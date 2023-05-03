@@ -1076,13 +1076,12 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
         {
             printf("%s\n", result);
         }
-        else
-        {
-            FILE *outfile = fopen(files[*count % 2], "w");
 
-            fprintf(outfile, "%s", result);
-            fclose(outfile);
-        }
+        FILE *outfile = fopen(files[*count % 2], "w");
+
+        fprintf(outfile, "%s", result);
+        fclose(outfile);
+
         *First = false;
         return;
     }
@@ -1095,13 +1094,12 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
         {
             printf("%s\n", result);
         }
-        else
-        {
-            FILE *outfile = fopen(files[*count % 2], "w");
 
-            fprintf(outfile, "%s", result);
-            fclose(outfile);
-        }
+        FILE *outfile = fopen(files[*count % 2], "w");
+
+        fprintf(outfile, "%s", result);
+        fclose(outfile);
+
         *First = false;
 
         return;
@@ -1144,14 +1142,11 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
             {
                 printf("%s\n", result);
             }
-            else
-            {
 
-                FILE *outfile = fopen(files[*count % 2], "w");
+            FILE *outfile = fopen(files[*count % 2], "w");
 
-                fprintf(outfile, "%s", result);
-                fclose(outfile);
-            }
+            fprintf(outfile, "%s", result);
+            fclose(outfile);
         }
 
         *First = false;
@@ -1181,13 +1176,11 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
         {
             printf("%s\n", result);
         }
-        else
-        {
-            FILE *outfile = fopen(files[*count % 2], "w");
 
-            fprintf(outfile, "%s", result);
-            fclose(outfile);
-        }
+        FILE *outfile = fopen(files[*count % 2], "w");
+
+        fprintf(outfile, "%s", result);
+        fclose(outfile);
 
         *First = false;
         return;
