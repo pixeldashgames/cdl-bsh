@@ -105,6 +105,7 @@ void sigint_handler(int sig)
 
 int main()
 {
+    printf("Start");
     int i;
 
     // To store the last command entered by the user.
