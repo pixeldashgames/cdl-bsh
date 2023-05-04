@@ -211,6 +211,8 @@ int main()
         printf(YELLOW "cdl-bsh" COLOR_RESET " - " CYAN "%s" YELLOW BOLD " $ " BOLD_RESET COLOR_RESET, currentDir);
 
         fgets(cmd, sizeof(cmd), stdin);
+        char *clean_cmd = clean_command(cmd);
+        strcpy(cmd, clean_cmd);
 
         int cmdLen = strlen(cmd);
 
@@ -272,9 +274,6 @@ int main()
         if (error)
             continue;
 
-        printf("a");
-        fflush(stdout);
-
         if (cmd[0] != ' ')
         {
             lock(&historymutex);
@@ -293,7 +292,7 @@ int main()
 
             char *hist = history(cmdhistory, historyPointer, &historymutex, false);
 
-            historyfile = fopen("history.txt", "w");
+            historyfile = fopen(history_file, "w");
             fprintf(historyfile, "%s", hist);
 
             fclose(historyfile);
@@ -438,7 +437,6 @@ void *execute_commands(void *args)
 
     int count = 0;
     bool First = true;
-    printf("%s\n", pcmd);
     main_execute(pcmd, &count, files, &First, *arg);
 
     pthread_cleanup_pop(1);
@@ -628,10 +626,6 @@ int unset(struct Dictionary *dict, mutex_t *varsmutex, char *var)
 char *clean_command(char *func)
 {
     struct JaggedCharArray command_clean = splitstr(func, ' ');
-    for (int i = 0; i < command_clean.count; i++)
-    {
-        printf("%s \n", command_clean.arr[i]);
-    }
 
     return joinarr(command_clean, ' ', command_clean.count);
 }
@@ -796,7 +790,6 @@ char *parse_function(char *func, struct JaggedCharArray operators)
 
 int execute_pipe(char *command[], bool first, char *files[], int count)
 {
-    printf("first: %s, count: %i\n", (first) ? "true" : "false", count);
     int fd_input = -1;
     int fd_output = -1;
     int status;
@@ -869,6 +862,7 @@ char *read_file(char *files[], int count, bool *First)
     FILE *fp;
     long lSize;
     char *buffer;
+
     fp = fopen((*First) ? files[count % 2] : files[(count + 1) % 2], "rb");
     if (!fp)
         perror("file not found"), exit(1);
@@ -896,8 +890,7 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
 
         if (infile != NULL)
         {
-            char *f[] = {files[(count + 1) % 2]};
-            char *out = read_file(f, 0, &First);
+            char *out = read_file(files, count, &First);
             if (strlen(out) == 0)
             {
                 fclose(infile);
@@ -916,7 +909,7 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
             return NULL;
         }
     }
-    else if (First)
+    else
     {
         if (noargs)
         {
@@ -1004,7 +997,7 @@ void main_execute(char *function, int *count, char *files[], bool *First, struct
     }
     if (strcmp(op, "cd") == 0)
     {
-        char *arg = getcmdinput(First, noargs, files, *count, argsarr);
+        char *arg = getcmdinput(*First, noargs, files, *count, argsarr);
 
         if (arg == NULL)
         {
@@ -1218,7 +1211,8 @@ void main_execute(char *function, int *count, char *files[], bool *First, struct
         // check if if-statment was true
         char *output = malloc(5 * sizeof(char));
         memset(output, 0, 5 * sizeof(char));
-        output = read_file(if_file, 0, &(*First));
+        bool fi = true;
+        output = read_file(if_file, 0, &fi);
         if (strcmp(output, "0\n") == 0)
         {
             main_execute(second, &(*count), files, &(*First), executeArgs);
@@ -1268,8 +1262,6 @@ void execute_nonboolean(char *function, int *count, char *files[], char *op, boo
     main_execute(left, &(*count), files, &(*First), executeArgs);
     if (strcmp(op, "|") == 0)
         (*count)++;
-
-    printf("%i", *count);
 
     main_execute(right, &(*count), files, &(*First), executeArgs);
     free(right);
