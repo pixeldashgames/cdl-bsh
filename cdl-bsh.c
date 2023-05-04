@@ -411,7 +411,7 @@ void *execute_commands(void *args)
 
     pthread_cleanup_push(cleanup_function, arg->runningFlag);
 
-    char op[] = "; || && | < >> > if true false help cd jobs fg history set get unset exit";
+    char op[] = "; >> > || && | < if true false help cd jobs fg history set get unset exit";
 
     char *pcmd = parse_function(arg->cmd, splitstr(op, ' '));
 
@@ -634,7 +634,7 @@ char *clean_command(char *func)
 
 bool is_binary(char *op)
 {
-    char binary_op[] = "; | && ||";
+    char binary_op[] = "; | && || < >> >";
     struct JaggedCharArray operators = splitstr(binary_op, ' ');
     for (int i = 0; i < operators.count; i++)
     {
@@ -970,8 +970,6 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
 // Testeando en el archivo alfredo.c
 void main_execute(char *function, int *count, char *files[], bool *First, bool is_original, struct ExecuteArgs executeArgs)
 {
-    printf("%s", function);
-    fflush(stdout);
     if (is_command(function))
     {
         struct JaggedCharArray split_func = splitstr(function, ' ');
@@ -1477,7 +1475,7 @@ void execute_flow(char *function, int *count, char *files[], char *op, bool *Fir
     memcpy(right, function + comma_index + 1, right_size * sizeof(char));
     if (strcmp(op, "<") == 0)
     {
-        int size = strlen(files[(*count + 1) % 2]) + right_size;
+        size_t size = strlen(files[(*count + 1) % 2]) + right_size;
         char *new_files = malloc((size + 1) * sizeof(char));
         memset(new_files, 0, size + 1);
         strcat(new_files, files[(*count) % 2]);
@@ -1494,9 +1492,9 @@ void execute_flow(char *function, int *count, char *files[], char *op, bool *Fir
     if (strcmp(op, ">") == 0)
     {
         main_execute(left, &(*count), files, &(*First), is_original, executeArgs);
-        char *output = read_file(files, *count, &(*First));
+        char *output = read_file(files, *count + 1, &(*First));
         FILE *fp = fopen(right, "w");
-        fprintf(fp, "%s\n", output);
+        fprintf(fp, "%s", output);
         fclose(fp);
         free(right);
         free(left);
@@ -1505,9 +1503,9 @@ void execute_flow(char *function, int *count, char *files[], char *op, bool *Fir
     if (strcmp(op, ">>") == 0)
     {
         main_execute(left, &(*count), files, &(*First), is_original, executeArgs);
-        char *output = read_file(files, *count, &(*First));
+        char *output = read_file(files, *count + 1, &(*First));
         FILE *fp = fopen(right, "a");
-        fprintf(fp, "%s\n", output);
+        fprintf(fp, "%s", output);
         fclose(fp);
         free(right);
         free(left);
