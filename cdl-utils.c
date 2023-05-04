@@ -5,7 +5,7 @@ char help[] = "Members: Leonardo Amaro Rodriguez and Alfredo Montero Lopez\n"
               "\nTotal: 6.5";
 char help_basics[] = "cd <arg>: Changes directory to arg if possible. Makes use of the chdir(char *) function in C.\n" // LEO
                      "\nexit: Uses the exit(i) function in C to exit, clearing up memory and stdio resources.\n"       // LEO
-                     /*FIX*/ "\n>,<,>>: These features are not considered built-in operators so we send it to the execvp directly, letting the operative system handler them\n"
+                     "\n<,>,>>: For features we change the input/output param of the command\n"
                      "\n|: If you type command1 | command2, executes command1 and its output is saved to a file, which is later read and sent as input to command2\n"
                      "For more understanding of pipe feature seek how works multi-pipe whit \"help multi-pipe\"\n";
 char help_multipipe[] = "With this feature we allow to use multiple pipes in a single command. Example: command1 | command2 | command3 ... and so on.\n"

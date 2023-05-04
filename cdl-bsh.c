@@ -417,7 +417,6 @@ void *execute_commands(void *args)
     char op[] = "; >> > || && | < if true false help cd jobs fg history set get unset exit";
 
     char *pcmd = parse_function(arg->cmd, splitstr(op, ' '));
-
     struct timeval tv;
     gettimeofday(&tv, NULL);
 
@@ -1003,13 +1002,11 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
 
         return;
     }
-
     int parenthesis_init = findstr(function, "(");
     char *op = malloc((parenthesis_init + 1) * sizeof(char));
     memset(op, 0, parenthesis_init + 1);
     strncpy(op, function, parenthesis_init);
     int op_len = strlen(op);
-
     char *args = function + parenthesis_init + 1;
     int alen = strlen(args);
 
@@ -1023,11 +1020,9 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
     }
     else
     {
-        args = malloc(alen * sizeof(char));
-
+        args = malloc((alen + 1) * sizeof(char));
         strncpy(args, function + parenthesis_init + 1, alen - 1);
         args[alen] = '\0';
-
         argsarr = splitstr(args, ',');
     }
 
@@ -1338,7 +1333,7 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
         output = read_file(if_file, 0, &fi);
         if (strcmp(output, "0\n") == 0)
         {
-            main_execute(second, &(*count), files, &(*First), false, executeArgs);
+            main_execute(second, &(*count), files, &(*First), true, executeArgs);
         }
 
         // third comma search
@@ -1352,17 +1347,18 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
         // check if if-statment was true
         if (strcmp(output, "1\n") == 0)
         {
-            main_execute(third, &(*count), files, &(*First), false, executeArgs);
+            main_execute(third, &(*count), files, &(*First), true, executeArgs);
         }
     }
     if (strcmp(op, "<") == 0)
     {
         execute_flow(function, &(*count), files, op, &(*First), is_original, executeArgs);
-        *First = true;
+        *First = false;
         return;
     }
     if (strcmp(op, ">") == 0)
     {
+        fflush(stdout);
         execute_flow(function, &(*count), files, op, &(*First), is_original, executeArgs);
         *First = true;
         return;
@@ -1518,7 +1514,7 @@ void execute_flow(char *function, int *count, char *files[], char *op, bool *Fir
     }
     if (strcmp(op, ">") == 0)
     {
-        main_execute(left, &(*count), files, &(*First), is_original, executeArgs);
+        main_execute(left, &(*count), files, &(*First), false, executeArgs);
         char *output = read_file(files, *count + 1, &(*First));
         FILE *fp = fopen(right, "w");
         fprintf(fp, "%s", output);
