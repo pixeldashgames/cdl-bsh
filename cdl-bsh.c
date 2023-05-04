@@ -410,7 +410,7 @@ void *execute_commands(void *args)
 
     pthread_cleanup_push(cleanup_function, arg->runningFlag);
 
-    char op[] = "; || && | < > >> if true false help cd jobs fg history set get unset exit";
+    char op[] = "; || && | < >> > if true false help cd jobs fg history set get unset exit";
 
     char *pcmd = parse_function(arg->cmd, splitstr(op, ' '));
 
@@ -661,15 +661,19 @@ char *parse_function(char *func, struct JaggedCharArray operators)
 
     for (int i = 0; i < operators.count; i++)
     {
-        int index = 0;
+        int oplen = strlen(operators.arr[i]);
+        int index = -2;
         int offset = 0;
-        while (index == 0)
+        while (index == -2)
         {
             index = findstr(func + offset, operators.arr[i]);
-            if ((func[index - 1] != ' ') || (func[index + strlen(operators.arr[i])] != ' '))
+            if (index == -1)
+                break;
+
+            if ((index > 0 && func[index - 1] != ' ') || (index + oplen < function_len && func[index + oplen] != ' '))
             {
                 offset = index + 1;
-                index = -1;
+                index = -2;
             }
         }
 
@@ -965,6 +969,8 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
 // Testeando en el archivo alfredo.c
 void main_execute(char *function, int *count, char *files[], bool *First, bool is_original, struct ExecuteArgs executeArgs)
 {
+    printf("%s", function);
+    fflush(stdout);
     if (is_command(function))
     {
         struct JaggedCharArray split_func = splitstr(function, ' ');
