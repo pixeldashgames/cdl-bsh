@@ -1,11 +1,11 @@
 #include "cdl-utils.h"
 char help[] = "Members: Leonardo Amaro Rodriguez and Alfredo Montero Lopez\n"
-              "\nFeatures:\nbasics\nmulti-pipe\nbackground\nspaces\nhistory\nctrl+c\nchain\nif\nhelp\nvariables\n"
+              "\nFeatures:\nbasics\nmulti-pipe\nspaces\nhistory\nchain\nif\nhelp\n"
               "\nBuilt-in commands:\ncd\nexit\nhelp\n" // Falta escribir mas comandos
-              "\nTotal: 9.5";
-char help_basics[] = "cd:\n"     // LEO
-                     "\nexit:\n" // LEO
-                     "\n>,<,>>: These features are not considered built-in operators so we send it to the execvp directly, letting the operative system handler them\n"
+              "\nTotal: 6.5";
+char help_basics[] = "cd <arg>: Changes directory to arg if possible. Makes use of the chdir(char *) function in C.\n" // LEO
+                     "\nexit: Uses the exit(i) function in C to exit, clearing up memory and stdio resources.\n"       // LEO
+                     /*FIX*/ "\n>,<,>>: These features are not considered built-in operators so we send it to the execvp directly, letting the operative system handler them\n"
                      "\n|: If you type command1 | command2, executes command1 and its output is saved to a file, which is later read and sent as input to command2\n"
                      "For more understanding of pipe feature seek how works multi-pipe whit \"help multi-pipe\"\n";
 char help_multipipe[] = "With this feature we allow to use multiple pipes in a single command. Example: command1 | command2 | command3 ... and so on.\n"
@@ -13,12 +13,11 @@ char help_multipipe[] = "With this feature we allow to use multiple pipes in a s
                         "We create 2 files in tmp folder and we use a counter variable which it raised by 1 for each command send by the user in the line.\n"
                         "With the counter we save the output following the next behavior: file[count%2] = output and input = file[(count+1)%2], allowing to reuse the same files and save some space\n"
                         "This counter only rise when is used on pipes, because we reuse the method who execute the commands\n";
-char help_background[] = ""; // LEO
 char help_spaces[] = "For this features we implemented a parse function wich convert the commands like this example: command1 | comand2 into |(command1,command2).\n"
                      "In others words, we convert each operator in a prefix way for convenience.\n"
                      "Of course, in this parse_function we split the string by the space character, ignoring multiple-spaces in a row.\n";
-char help_history[] = ""; // LEO
-char help_ctrl[] = "";    // LEO
+char help_history[] = "history: Outputs the last 10 commands used, except those that start with a space.\n"
+                      "\nagain <arg>: Replaces the again command with the #arg command in the stored history.\n"; // LEO
 char help_chain[] = "true and false features:\n"
                     "As result of our code, each command put its output in a file, so we treat true and false like echo 0 and echo 1 respectively. For us, 0 is true and 1 is false\n"
                     "; && || features:\n"
@@ -29,7 +28,6 @@ char help_if[] = "For this features we implemented a parse function that convert
                  "The actual parse function doesn't allow nested if, but it is relatively easy:\n"
                  "For each clause of the statement of an \"if\", for example: from \"if\" to \"then\", we only have to look for the first appearance of the word \"end\", get its position and compare it with the position of the closing clause. "
                  "If the position of the word \"end\" is less than that of the word \"then\", inside that clause there is an if statement, and we only have to parse that nested if recursively.\n";
-char help_variables[] = ""; // LEO
 int indexOf(unsigned long long elem, unsigned long long *array, int cnt)
 {
     int i;
@@ -299,24 +297,21 @@ int dremove(struct Dictionary *dict, char *var)
 
     return 1;
 }
-char *get_help(char *function)
+char *get_help(char *param)
 {
-    int parenthesis_init = findstr(function, "(");
-    int parenthesis_end = findstr(function, ")");
-    int param_len = parenthesis_end - parenthesis_init - 1;
-    if (param_len == 0)
+    if (param == NULL)
         return help;
-    char *param = malloc((param_len + 1) * sizeof(char));
-    memset(param, 0, param_len + 1);
-    strncpy(param, function + parenthesis_init + 1, param_len);
+
     if (strcmp(param, "basics") == 0)
         return help_basics;
-    if (strcmp(param, "background") == 0)
-        return help_background;
+    if (strcmp(param, "multi-pipe") == 0)
+        return help_multipipe;
+    // if (strcmp(param, "background") == 0)
+    //     return help_background;
     if (strcmp(param, "chain") == 0)
         return help_chain;
-    if (strcmp(param, "ctrl+c") == 0)
-        return help_ctrl;
+    // if (strcmp(param, "ctrl+c") == 0)
+    //     return help_ctrl;
     if (strcmp(param, "history") == 0)
         return help_history;
     if (strcmp(param, "if") == 0)
@@ -325,8 +320,8 @@ char *get_help(char *function)
         return help_multipipe;
     if (strcmp(param, "spaces") == 0)
         return help_spaces;
-    if (strcmp(param, "variables") == 0)
-        return help_variables;
-    else
-        return help;
+    // if (strcmp(param, "variables") == 0)
+    //     return help_variables;
+
+    return help;
 }

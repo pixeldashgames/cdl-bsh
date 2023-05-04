@@ -16,6 +16,8 @@
         "*.tcc": "c",
         "cctype": "c",
         "signal.h": "c",
-        "stdarg.h": "c"
+        "stdarg.h": "c",
+        "cdl-utils.h": "c",
+        "time.h": "c"
     }
 }

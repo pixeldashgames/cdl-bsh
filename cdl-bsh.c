@@ -213,6 +213,9 @@ int main()
         printf(YELLOW "cdl-bsh" COLOR_RESET " - " CYAN "%s" YELLOW BOLD " $ " BOLD_RESET COLOR_RESET, currentDir);
 
         fgets(cmd, sizeof(cmd), stdin);
+
+        bool saveInHist = cmd[0] != ' ';
+
         char *clean_cmd = clean_command(cmd);
         strcpy(cmd, clean_cmd);
 
@@ -276,7 +279,7 @@ int main()
         if (error)
             continue;
 
-        if (cmd[0] != ' ')
+        if (saveInHist)
         {
             lock(&historymutex);
 
@@ -926,8 +929,13 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
 
             fclose(infile);
             int outlen = strlen(out);
-            if (out[outlen - 1] == '\n')
+            char last = out[outlen - 1];
+            while (last == '\n' || last == ' ')
+            {
                 out[outlen - 1] = '\0';
+                outlen -= 1;
+                last = out[outlen - 1];
+            }
             return out;
         }
         else
@@ -945,8 +953,14 @@ char *getcmdinput(bool First, bool noargs, char **files, int count, struct Jagge
         {
             char *out = joinarr(argsarr, ' ', argsarr.count);
             int outlen = strlen(out);
-            if (out[outlen - 1] == '\n')
+            char last = out[outlen - 1];
+            while (last == '\n' || last == ' ')
+            {
                 out[outlen - 1] = '\0';
+                outlen -= 1;
+                last = out[outlen - 1];
+            }
+
             return out;
         }
     }
@@ -1227,6 +1241,25 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
         *First = false;
         return;
     }
+    if (strcmp(op, "help") == 0)
+    {
+        char *arg = getcmdinput(*First, noargs, files, *count, argsarr);
+
+        char *result = get_help(arg);
+
+        if (is_original)
+        {
+            printf("%s\n", result);
+        }
+
+        FILE *outfile = fopen(files[*count % 2], "w");
+
+        fprintf(outfile, "%s", result);
+        fclose(outfile);
+
+        *First = false;
+        return;
+    }
     if (strcmp(op, "&&") == 0)
     {
         execute_boolean(function, &(*count), files, op, &(*First), is_original, executeArgs);
@@ -1337,12 +1370,6 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
     if (strcmp(op, ">>") == 0)
     {
         execute_flow(function, &(*count), files, op, &(*First), is_original, executeArgs);
-        *First = true;
-        return;
-    }
-    if (strcmp(op, "help") == 0)
-    {
-        execute_help(function, &(*count), files, op, &(*First), is_original, executeArgs);
         *First = true;
         return;
     }
@@ -1511,13 +1538,4 @@ void execute_flow(char *function, int *count, char *files[], char *op, bool *Fir
         free(left);
         return;
     }
-}
-void execute_help(char *function, int *count, char *files[], char *op, bool *First, bool is_original, struct ExecuteArgs executeArgs)
-{
-    char *help = get_help(function);
-    FILE *fp = fopen(files[(*count + 1) % 2], "w");
-    fprintf(fp, "%s\n", help);
-    fclose(fp);
-    free(help);
-    return;
 }
