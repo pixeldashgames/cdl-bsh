@@ -666,7 +666,18 @@ char *parse_function(char *func, struct JaggedCharArray operators)
 
     for (int i = 0; i < operators.count; i++)
     {
-        int index = findstr(func, operators.arr[i]);
+        int index = 0;
+        int offset = 0;
+        while (index == 0)
+        {
+            index = findstr(func + offset, operators.arr[i]);
+            if ((func[index - 1] != ' ') || (func[index + strlen(operators.arr[i])] != ' '))
+            {
+                offset = index + 1;
+                index = -1;
+            }
+        }
+
         if (index == -1)
             continue;
         if (!strcmp(operators.arr[i], "if"))
@@ -1238,6 +1249,15 @@ void main_execute(char *function, int *count, char *files[], bool *First, struct
             main_execute(third, &(*count), files, &(*First), executeArgs);
         }
     }
+    if (strcmp(op, "<") == 0)
+    {
+    }
+    if (strcmp(op, ">") == 0)
+    {
+    }
+    if (strcmp(op, ">>") == 0)
+    {
+    }
 }
 void execute_nonboolean(char *function, int *count, char *files[], char *op, bool *First, struct ExecuteArgs executeArgs)
 {
@@ -1334,4 +1354,91 @@ void execute_boolean(char *function, int *count, char *files[], char *op, bool *
     free(right);
     free(left);
     return;
+}
+
+void execute_flow(char *function, int *count, char *files[], char *op, bool *First, struct ExecuteArgs executeArgs)
+{
+    int parenthesis_init = findstr(function, "(");
+    int comma_index = -1;
+    int parenth_count = 0;
+    int len = strlen(function);
+    for (int i = parenthesis_init + 1; i < len; i++)
+    {
+        if (function[i] == ',' && parenth_count == 0)
+        {
+            comma_index = i;
+            break;
+        }
+        if (function[i] == '(')
+            parenth_count++;
+        if (function[i] == ')')
+            parenth_count--;
+    }
+    int left_size = comma_index - parenthesis_init - 1;
+    char *left = malloc((left_size + 1) * sizeof(char));
+    memset(left, 0, (left_size + 1) * sizeof(char));
+    memcpy(left, function + parenthesis_init + 1, (left_size) * sizeof(char));
+    int right_size = (len - 1) - comma_index - 1;
+    char *right = malloc((right_size + 1) * sizeof(char));
+    memset(right, 0, (right_size + 1) * sizeof(char));
+    memcpy(right, function + comma_index + 1, right_size * sizeof(char));
+    if (strcmp(op, "<") == 0)
+    {
+        int size = strlen(files[(*count + 1) % 2]) + right_size;
+        char *new_files = malloc((size + 1) * sizeof(char));
+        memset(new_files, 0, size + 1);
+        if (First)
+        {
+            strcat(new_files, files[(*count + 1) % 2]);
+            strcat(new_files, " ");
+            strcat(new_files, files[(*count) % 2]);
+        }
+        else
+        {
+            strcat(new_files, files[(*count) % 2]);
+            strcat(new_files, " ");
+            strcat(new_files, files[(*count + 1) % 2]);
+        }
+        bool new_First = false;
+        main_execute(left, &(*count), new_files, &new_First, executeArgs);
+        free(right);
+        free(left);
+        free(new_files);
+        return;
+    }
+    if (strcmp(op, ">") == 0)
+    {
+        int size = strlen(files[(*count + 1) % 2]) + right_size;
+        char *new_files = malloc((size + 1) * sizeof(char));
+        memset(new_files, 0, size + 1);
+        if (First)
+        {
+            strcat(new_files, files[(*count) % 2]);
+            strcat(new_files, " ");
+            strcat(new_files, files[(*count + 1) % 2]);
+        }
+        else
+        {
+            strcat(new_files, files[(*count + 1) % 2]);
+            strcat(new_files, " ");
+            strcat(new_files, files[(*count) % 2]);
+        }
+        main_execute(left, &(*count), new_files, First, executeArgs);
+        free(right);
+        free(left);
+        free(new_files);
+        return;
+    }
+    if (strcmp(op, ">>") == 0)
+    {
+        main_execute(left, &(*count), files, &(*First), executeArgs);
+        char *output = read_file(files, count, &(*First));
+        mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+        FILE *fp = fopen(right, "a");
+        fprintf(fp, output);
+        fclose(fp);
+        free(right);
+        free(left);
+        return;
+    }
 }
