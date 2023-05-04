@@ -57,6 +57,7 @@ int execute_pipe(char *command[], bool first, char *files[], int count);
 void main_execute(char *function, int *count, char *files[], bool *First, bool is_original, struct ExecuteArgs executeArgs);
 void execute_nonboolean(char *function, int *count, char *files[], char *op, bool *First, bool is_original, struct ExecuteArgs executeArgs);
 void execute_boolean(char *function, int *count, char *files[], char *op, bool *First, bool is_original, struct ExecuteArgs executeArgs);
+void execute_flow(char *function, int *count, char *files[], char *op, bool *First, bool is_original, struct ExecuteArgs executeArgs);
 void cleanup_function(void *arg);
 char *read_file(char *files[], int count, bool *First);
 
@@ -409,7 +410,7 @@ void *execute_commands(void *args)
 
     pthread_cleanup_push(cleanup_function, arg->runningFlag);
 
-    char op[] = "; || && | if true false help cd jobs fg history set get unset exit";
+    char op[] = "; || && | < > >> if true false help cd jobs fg history set get unset exit";
 
     char *pcmd = parse_function(arg->cmd, splitstr(op, ' '));
 
@@ -1325,12 +1326,21 @@ void main_execute(char *function, int *count, char *files[], bool *First, bool i
     }
     if (strcmp(op, "<") == 0)
     {
+        execute_flow(function, &(*count), files, op, &(*First), is_original, executeArgs);
+        *First = true;
+        return;
     }
     if (strcmp(op, ">") == 0)
     {
+        execute_flow(function, &(*count), files, op, &(*First), is_original, executeArgs);
+        *First = true;
+        return;
     }
     if (strcmp(op, ">>") == 0)
     {
+        execute_flow(function, &(*count), files, op, &(*First), is_original, executeArgs);
+        *First = true;
+        return;
     }
 }
 void execute_nonboolean(char *function, int *count, char *files[], char *op, bool *First, bool is_original, struct ExecuteArgs executeArgs)
@@ -1433,7 +1443,7 @@ void execute_boolean(char *function, int *count, char *files[], char *op, bool *
     return;
 }
 
-void execute_flow(char *function, int *count, char *files[], char *op, bool *First, struct ExecuteArgs executeArgs)
+void execute_flow(char *function, int *count, char *files[], char *op, bool *First, bool is_original, struct ExecuteArgs executeArgs)
 {
     int parenthesis_init = findstr(function, "(");
     int comma_index = -1;
@@ -1459,6 +1469,7 @@ void execute_flow(char *function, int *count, char *files[], char *op, bool *Fir
     char *right = malloc((right_size + 1) * sizeof(char));
     memset(right, 0, (right_size + 1) * sizeof(char));
     memcpy(right, function + comma_index + 1, right_size * sizeof(char));
+    printf("%s > %s\n", left, right);
     if (strcmp(op, "<") == 0)
     {
         int size = strlen(files[(*count + 1) % 2]) + right_size;
@@ -1476,8 +1487,9 @@ void execute_flow(char *function, int *count, char *files[], char *op, bool *Fir
             strcat(new_files, " ");
             strcat(new_files, files[(*count + 1) % 2]);
         }
+        struct JaggedCharArray jag_files = splitstr(new_files, ' ');
         bool new_First = false;
-        main_execute(left, &(*count), new_files, &new_First, executeArgs);
+        main_execute(left, &(*count), jag_files.arr, &(*First), is_original, executeArgs);
         free(right);
         free(left);
         free(new_files);
@@ -1485,34 +1497,21 @@ void execute_flow(char *function, int *count, char *files[], char *op, bool *Fir
     }
     if (strcmp(op, ">") == 0)
     {
-        int size = strlen(files[(*count + 1) % 2]) + right_size;
-        char *new_files = malloc((size + 1) * sizeof(char));
-        memset(new_files, 0, size + 1);
-        if (First)
-        {
-            strcat(new_files, files[(*count) % 2]);
-            strcat(new_files, " ");
-            strcat(new_files, files[(*count + 1) % 2]);
-        }
-        else
-        {
-            strcat(new_files, files[(*count + 1) % 2]);
-            strcat(new_files, " ");
-            strcat(new_files, files[(*count) % 2]);
-        }
-        main_execute(left, &(*count), new_files, First, executeArgs);
+        main_execute(left, &(*count), files, &(*First), is_original, executeArgs);
+        char *output = read_file(files, *count, &(*First));
+        FILE *fp = fopen(right, "w");
+        fprintf(fp, "%s\n", output);
+        fclose(fp);
         free(right);
         free(left);
-        free(new_files);
         return;
     }
     if (strcmp(op, ">>") == 0)
     {
-        main_execute(left, &(*count), files, &(*First), executeArgs);
-        char *output = read_file(files, count, &(*First));
-        mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+        main_execute(left, &(*count), files, &(*First), is_original, executeArgs);
+        char *output = read_file(files, *count, &(*First));
         FILE *fp = fopen(right, "a");
-        fprintf(fp, output);
+        fprintf(fp, "%s\n", output);
         fclose(fp);
         free(right);
         free(left);
